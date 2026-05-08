@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     ENV: str = "development"
 
     # LLM API keys — from environment variables only
+    # OPENAI_API_KEY and ANTHROPIC_API_KEY must be set in .env or environment
+    # for the AI Pipeline to function. Missing keys cause silent fallback.
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
 
@@ -27,9 +29,11 @@ class Settings(BaseSettings):
     AI_PIPELINE_POLL_INTERVAL: int = 60
 
     # Default crawler interval (minutes)
+    # Per-source override available in source_configs table.
     CRAWL_INTERVAL_MINUTES: int = 30
 
     # APScheduler sync DSN; auto-derived from DATABASE_URL if empty
+    # Uses postgresql:// (non-async) driver for SQLAlchemyJobStore.
     SCHEDULER_DATABASE_URL: str = ""
 
     model_config = SettingsConfigDict(
