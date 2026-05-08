@@ -11,29 +11,27 @@ from sqlalchemy import select
 
 SOURCES = [
     # RSS/Atom feeds
-    {"name": "OpenAI Blog", "type": "rss", "url": "https://openai.com/blog/rss.xml", "enabled": True},
-    {"name": "Anthropic Blog", "type": "rss", "url": "https://www.anthropic.com/rss.xml", "enabled": True},
-    {"name": "Google AI Blog", "type": "rss", "url": "https://blog.google/technology/ai/rss/", "enabled": True},
-    {"name": "IT之家 AI", "type": "rss", "url": "https://rss.ithome.com/ai.xml", "enabled": True},
-    {"name": "Hugging Face Blog", "type": "rss", "url": "https://huggingface.co/blog/feed.xml", "enabled": True},
-    {"name": "Arxiv AI (RSS)", "type": "rss", "url": "https://rss.arxiv.org/rss/cs.AI", "enabled": True},
+    {"name": "OpenAI Blog", "type": "rss", "url": "https://openai.com/blog/rss.xml"},
+    {"name": "Anthropic Blog", "type": "rss", "url": "https://www.anthropic.com/rss.xml"},
+    {"name": "Google AI Blog", "type": "rss", "url": "https://blog.google/technology/ai/rss/"},
+    {"name": "IT之家 AI", "type": "rss", "url": "https://rss.ithome.com/ai.xml"},
+    {"name": "Hugging Face Blog", "type": "rss", "url": "https://huggingface.co/blog/feed.xml"},
+    {"name": "Arxiv AI (RSS)", "type": "rss", "url": "https://rss.arxiv.org/rss/cs.AI"},
 
     # OpenCLI sources
-    {"name": "HackerNews", "type": "hackernews", "url": "", "enabled": True, "config": {"limit": 30}},
-    {"name": "Arxiv AI (OpenCLI)", "type": "arxiv", "url": "", "enabled": True, "config": {"category": "cs.AI", "limit": 30}},
+    {"name": "HackerNews", "type": "hackernews", "url": ""},
+    {"name": "Arxiv AI (OpenCLI)", "type": "arxiv", "url": ""},
 
     # Social media
-    {"name": "Twitter/X AI", "type": "twitter", "url": "", "enabled": True,
-     "config": {"query": "AI", "limit": 20, "accounts": []}},
+    {"name": "Twitter/X AI", "type": "twitter", "url": ""},
 
     # HuggingFace
-    {"name": "HuggingFace Papers", "type": "huggingface", "url": "", "enabled": True, "config": {"limit": 20}},
+    {"name": "HuggingFace Papers", "type": "huggingface", "url": ""},
 ]
 
 
 async def seed():
     async with AsyncSessionLocal() as session:
-        # Check if already seeded
         result = await session.execute(select(SourceConfig).limit(1))
         if result.scalar_one_or_none():
             print("Sources already seeded, skipping.")
@@ -44,8 +42,6 @@ async def seed():
                 name=s["name"],
                 type=s["type"],
                 url=s.get("url", ""),
-                enabled=s["enabled"],
-                config=s.get("config", {}),
             )
             session.add(source)
 

@@ -78,7 +78,6 @@ def start_scheduler() -> AsyncIOScheduler:
         minutes=interval_minutes,
         id=JOB_ID_CRAWL,
         replace_existing=True,
-        next_run_time=None,
         misfire_grace_time=300,
     )
     scheduler.add_job(
@@ -87,7 +86,6 @@ def start_scheduler() -> AsyncIOScheduler:
         minutes=max(1, interval_minutes // 2),
         id=JOB_ID_PIPELINE,
         replace_existing=True,
-        next_run_time=None,
         misfire_grace_time=300,
     )
 
