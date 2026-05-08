@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.uv/
+
+# Node.js
+node_modules/
+dist/
+.pnpm-store/
+
+# Docker
+.env
+
+# IDE
+.idea/
+*.swp
+.DS_Store
+
+# Database
+pgdata/

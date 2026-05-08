@@ -1,0 +1,19 @@
+FROM python:3.13-slim
+
+# Install curl for health checks and uv for package management
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+WORKDIR /app
+
+# Copy dependency manifest first for layer caching
+COPY pyproject.toml .
+RUN /root/.cargo/bin/uv sync
+
+COPY . .
+
+# Expose the application port
+EXPOSE 8000
