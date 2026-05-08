@@ -11,7 +11,7 @@ export function CategoryTabs() {
   const categories = apiCategories && apiCategories.length > 0 ? apiCategories : DEFAULT_CATEGORIES;
 
   return (
-    <div className="overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+    <div className="overflow-x-auto scrollbar-hide">
       <Tabs
         value={activeCategory}
         onValueChange={setActiveCategory}
