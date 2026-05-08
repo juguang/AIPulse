@@ -3,6 +3,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine
+from app.api.items import router as items_router
+from app.api.sources import router as sources_router
+from app.schemas.health import HealthResponse
 
 
 @asynccontextmanager
@@ -37,8 +40,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(items_router)
+app.include_router(sources_router)
 
-@app.get("/health")
+
+@app.get("/health", response_model=HealthResponse)
 async def health_check():
     db_ok = False
     try:
