@@ -3,6 +3,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine
+from app.api.categories import router as categories_router
+from app.api.images import router as images_router
 from app.api.items import router as items_router
 from app.api.sources import router as sources_router
 from app.schemas.health import HealthResponse
@@ -55,6 +57,8 @@ app.add_middleware(
 
 app.include_router(items_router)
 app.include_router(sources_router)
+app.include_router(images_router)
+app.include_router(categories_router)
 
 
 @app.get("/health", response_model=HealthResponse)
