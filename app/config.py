@@ -12,6 +12,26 @@ class Settings(BaseSettings):
     ]
     ENV: str = "development"
 
+    # LLM API keys — from environment variables only
+    OPENAI_API_KEY: str = ""
+    ANTHROPIC_API_KEY: str = ""
+
+    # Model selection
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    ANTHROPIC_MODEL: str = "claude-sonnet-4-20260514"
+    SENTENCE_TRANSFORMERS_MODEL: str = "all-MiniLM-L6-v2"
+
+    # LLM retry and pipeline settings
+    MAX_RETRIES: int = 3
+    AI_PIPELINE_BATCH_SIZE: int = 5
+    AI_PIPELINE_POLL_INTERVAL: int = 60
+
+    # Default crawler interval (minutes)
+    CRAWL_INTERVAL_MINUTES: int = 30
+
+    # APScheduler sync DSN; auto-derived from DATABASE_URL if empty
+    SCHEDULER_DATABASE_URL: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
