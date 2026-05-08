@@ -1,0 +1,82 @@
+"""Crawl scheduler using APScheduler with database persistence.
+
+Usage in FastAPI lifespan:
+    from app.scheduler.scheduler import start_scheduler, stop_scheduler
+
+    scheduler = start_scheduler()
+    # ... on shutdown:
+    stop_scheduler(scheduler)
+"""
+
+import logging
+from datetime import datetime, timezone
+
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from sqlalchemy import select
+
+from app.config import settings
+from app.database import AsyncSessionLocal
+from app.models.source_config import SourceConfig
+from app.crawler.coordinator import crawl_all_sources
+
+logger = logging.getLogger(__name__)
+
+JOB_ID = "crawl_all_sources"
+
+
+def _derive_sync_dsn(async_dsn: str) -> str:
+    """Derive sync DSN from async DSN for APScheduler's SQLAlchemyJobStore."""
+    return async_dsn.replace("postgresql+asyncpg://", "postgresql://").replace(
+        "postgresql+psycopg://", "postgresql://"
+    )
+
+
+async def _crawl_job():
+    """Job function: crawl all enabled sources."""
+    logger.info("Crawl job started")
+    async with AsyncSessionLocal() as session:
+        results = await crawl_all_sources(session)
+
+    ok = sum(1 for r in results if r.get("status") == "ok")
+    errors = sum(1 for r in results if r.get("status") == "error")
+    total_items = sum(r.get("items_fetched", 0) for r in results)
+    logger.info(
+        "Crawl job finished: %d sources ok, %d errors, %d new items",
+        ok,
+        errors,
+        total_items,
+    )
+
+
+def start_scheduler() -> AsyncIOScheduler:
+    """Create and start the APScheduler instance."""
+    sync_dsn = settings.SCHEDULER_DATABASE_URL or _derive_sync_dsn(settings.DATABASE_URL)
+
+    jobstores = {
+        "default": SQLAlchemyJobStore(url=sync_dsn),
+    }
+
+    scheduler = AsyncIOScheduler(jobstores=jobstores)
+    interval_minutes = settings.CRAWL_INTERVAL_MINUTES
+
+    scheduler.add_job(
+        _crawl_job,
+        "interval",
+        minutes=interval_minutes,
+        id=JOB_ID,
+        replace_existing=True,
+        next_run_time=None,  # Don't run immediately on start
+        misfire_grace_time=300,
+    )
+
+    scheduler.start()
+    logger.info("Scheduler started (interval=%d min)", interval_minutes)
+    return scheduler
+
+
+def stop_scheduler(scheduler: AsyncIOScheduler | None):
+    """Shutdown scheduler gracefully."""
+    if scheduler:
+        scheduler.shutdown(wait=False)
+        logger.info("Scheduler stopped")
