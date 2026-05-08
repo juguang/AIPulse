@@ -3,27 +3,17 @@
 Three task families, each with a system prompt (role/instruction) and a
 user prompt (content insertion point):
 
-1. **Classification/Tagging** (GPT-4o-mini route)
-   - CLASSIFICATION_SYSTEM / CLASSIFICATION_USER
+1. **Classification/Tagging**
    - Purpose: Determine article category (模型/产品/行业/论文/技巧) and extract
      up to 5 Chinese tags. Outputs JSON.
-   - Design note: GPT-4o-mini is sufficient for label-based classification.
-     Categories are mutually exclusive, tags overlap across categories.
 
-2. **Summarization** (Claude Sonnet route)
-   - SUMMARIZATION_SYSTEM / SUMMARIZATION_USER
+2. **Summarization**
    - Purpose: Generate a 150-300 character Chinese summary retaining key
      information (who, what, why important). Outputs plain text.
-   - Design note: Claude Sonnet produces stronger Chinese summaries than
-     GPT-4o-mini. The summary length constraint (not max_tokens limit) is
-     enforced by the prompt instruction.
 
-3. **Scoring** (Claude Sonnet route)
-   - SCORING_SYSTEM / SCORING_USER
+3. **Scoring**
    - Purpose: Score article quality on 1-5 scale with per-dimension breakdown
      (technical_depth, novelty, impact, timeliness). Outputs JSON.
-   - Design note: Scoring requires multi-dimensional reasoning, hence Claude
-     Sonnet. Run after classification so category context is available.
 
 Output format:
     - Classification/Tagging: JSON  {"category": ..., "tags": [...], "language": ...}
@@ -33,21 +23,19 @@ Output format:
 Usage:
     from app.llm.prompts import CLASSIFICATION_SYSTEM, CLASSIFICATION_USER
 
-    # Format user prompt with article data
     user_prompt = CLASSIFICATION_USER.format(
         title="GPT-5: ...",
         summary="OpenAI ...",
         content="Full article body...",
     )
-
-Security note (T-02-02): All prompts are static strings defined in code.
-User input is only in the content fields passed via .format() at runtime.
-No prompt injection vector through the static prompt templates themselves.
 """
 
 # ============================================================
 # Classification & Tagging
-# Route: GPT-4o-mini (OpenAI)
+# ============================================================
+
+# ============================================================
+# Classification & Tagging
 # ============================================================
 
 CLASSIFICATION_SYSTEM = """你是一个 AI 资讯分类助手。请根据文章内容判断其分类和标签。
@@ -77,7 +65,6 @@ CLASSIFICATION_USER = """请为以下文章分类。
 
 # ============================================================
 # Summarization
-# Route: Claude Sonnet (Anthropic)
 # ============================================================
 
 SUMMARIZATION_SYSTEM = """你是一个 AI 资讯摘要助手。请为用户生成简洁准确的中文摘要。
@@ -103,7 +90,6 @@ SUMMARIZATION_USER = """请为以下文章生成中文摘要。
 
 # ============================================================
 # Scoring
-# Route: Claude Sonnet (Anthropic)
 # ============================================================
 
 SCORING_SYSTEM = """你是一个 AI 资讯质量评估专家。请根据以下维度对此文章进行评分。

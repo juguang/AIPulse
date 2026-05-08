@@ -6,11 +6,18 @@ from app.database import engine
 from app.api.items import router as items_router
 from app.api.sources import router as sources_router
 from app.schemas.health import HealthResponse
+from app.llm.client import LLMClients
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: verify DB connection
+    # Startup: init LLM clients
+    if settings.DEEPSEEK_API_KEY:
+        app.state.llm = LLMClients.from_settings(settings)
+        print("LLM clients initialized (DeepSeek)")
+    else:
+        print("Warning: DEEPSEEK_API_KEY not set — LLM pipeline disabled")
+    # Verify DB connection
     try:
         async with engine.connect() as conn:
             await conn.execute(
@@ -20,7 +27,9 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"Warning: Database not available at startup: {e}")
     yield
-    # Shutdown: dispose engine
+    # Shutdown: dispose engine and LLM clients
+    if hasattr(app.state, "llm"):
+        await app.state.llm.close()
     await engine.dispose()
 
 
