@@ -19,10 +19,12 @@ from app.config import settings
 from app.database import AsyncSessionLocal
 from app.models.source_config import SourceConfig
 from app.crawler.coordinator import crawl_all_sources
+from app.pipeline.coordinator import process_pending_items
 
 logger = logging.getLogger(__name__)
 
-JOB_ID = "crawl_all_sources"
+JOB_ID_CRAWL = "crawl_all_sources"
+JOB_ID_PIPELINE = "ai_pipeline"
 
 
 def _derive_sync_dsn(async_dsn: str) -> str:
@@ -49,6 +51,16 @@ async def _crawl_job():
     )
 
 
+async def _pipeline_job():
+    """Job function: process pending items through AI pipeline."""
+    logger.info("AI Pipeline job started")
+    try:
+        count = await process_pending_items()
+        logger.info("AI Pipeline job finished: %d items processed", count)
+    except Exception as e:
+        logger.error("AI Pipeline job failed: %s", str(e), exc_info=True)
+
+
 def start_scheduler() -> AsyncIOScheduler:
     """Create and start the APScheduler instance."""
     sync_dsn = settings.SCHEDULER_DATABASE_URL or _derive_sync_dsn(settings.DATABASE_URL)
@@ -64,9 +76,18 @@ def start_scheduler() -> AsyncIOScheduler:
         _crawl_job,
         "interval",
         minutes=interval_minutes,
-        id=JOB_ID,
+        id=JOB_ID_CRAWL,
         replace_existing=True,
-        next_run_time=None,  # Don't run immediately on start
+        next_run_time=None,
+        misfire_grace_time=300,
+    )
+    scheduler.add_job(
+        _pipeline_job,
+        "interval",
+        minutes=max(1, interval_minutes // 2),
+        id=JOB_ID_PIPELINE,
+        replace_existing=True,
+        next_run_time=None,
         misfire_grace_time=300,
     )
 
