@@ -1,94 +1,42 @@
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-
-interface HealthResponse {
-  status: string;
-  version: string;
-  database: string;
-}
+import { useFeedStore } from "@/stores/feed-store";
+import { useItems } from "@/hooks/use-items";
+import { SearchBar } from "@/components/feed/search-bar";
+import { CategoryTabs } from "@/components/feed/category-tabs";
+import { FeedList } from "@/components/feed/feed-list";
 
 function App() {
-  const {
-    data: health,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery<HealthResponse>({
-    queryKey: ["health"],
-    queryFn: async () => {
-      const res = await fetch("/health");
-      if (!res.ok) throw new Error("API 不可用");
-      return res.json();
-    },
-  });
+  const { data: itemsData, error, refetch, isPending } = useItems();
+  const currentPage = useFeedStore((s) => s.currentPage);
+  const setCurrentPage = useFeedStore((s) => s.setCurrentPage);
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">
-            AI Pulse
-          </CardTitle>
-          <CardDescription className="text-center">
-            AI 资讯精选聚合平台
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-100">
-            <span className="text-sm font-medium">API 状态</span>
-            <span
-              className={`text-sm px-2 py-0.5 rounded-full ${
-                isLoading
-                  ? "bg-yellow-100 text-yellow-700"
-                  : error
-                    ? "bg-red-100 text-red-700"
-                    : "bg-green-100 text-green-700"
-              }`}
-            >
-              {isLoading
-                ? "连接中..."
-                : error
-                  ? "未连接"
-                  : "已连接"}
-            </span>
+    <div className="min-h-screen bg-background">
+      {/* Sticky header with brand + search */}
+      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="mx-auto flex max-w-[960px] items-center justify-between gap-4 px-4 py-3">
+          <h1 className="text-lg font-semibold whitespace-nowrap">AI Pulse</h1>
+          <div className="w-full max-w-[400px]">
+            <SearchBar />
           </div>
+        </div>
+      </header>
 
-          {health && (
-            <>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-100">
-                <span className="text-sm font-medium">API 版本</span>
-                <span className="text-sm text-neutral-600">
-                  {health.version}
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-neutral-100">
-                <span className="text-sm font-medium">数据库</span>
-                <span
-                  className={`text-sm px-2 py-0.5 rounded-full ${
-                    health.database === "connected"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-yellow-100 text-yellow-700"
-                  }`}
-                >
-                  {health.database === "connected"
-                    ? "已连接"
-                    : "未连接"}
-                </span>
-              </div>
-            </>
-          )}
+      {/* Main content area */}
+      <main className="mx-auto max-w-[960px] px-4 py-4">
+        <CategoryTabs />
 
-          <Button
-            className="w-full"
-            variant="outline"
-            onClick={() => refetch()}
-            disabled={isLoading}
-          >
-            {isLoading ? "刷新中..." : "刷新状态"}
-          </Button>
-        </CardContent>
-      </Card>
+        <div className="mt-4">
+          <FeedList
+            items={itemsData?.items ?? []}
+            totalPages={itemsData?.total_pages ?? 1}
+            isLoading={isPending}
+            error={error}
+            onRetry={refetch}
+            currentPage={currentPage}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      </main>
     </div>
   );
 }
