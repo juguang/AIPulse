@@ -81,7 +81,7 @@ async def crawl_single_source(source: SourceConfig) -> dict[str, Any]:
                     source_id=source.id,
                     guid=article["guid"],
                     title=article["title"],
-                    url=normalize_url(article["url"]),
+                    source_url=normalize_url(article["url"]),
                     content_raw=article.get("content_raw"),
                     author=article.get("author"),
                     published_at=ensure_timezone(article.get("published_at")),

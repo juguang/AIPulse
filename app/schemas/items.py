@@ -17,7 +17,7 @@ class RawItemCreate(BaseModel):
     author: Optional[str] = None
     published_at: datetime
     content_hash: str
-    metadata: Optional[Dict[str, Any]] = {}
+    extra_data: Optional[Dict[str, Any]] = {}
 
 
 class RawItemResponse(BaseModel):

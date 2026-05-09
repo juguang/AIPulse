@@ -22,7 +22,7 @@ class HFFetcher(BaseFetcher):
         limit = self.get_config("limit", 20)
 
         try:
-            papers = api.list_daily_papers()
+            papers = list(api.list_daily_papers())
         except Exception:
             return []
 
