@@ -1,5 +1,4 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 interface PaginationProps {
   currentPage: number;
@@ -41,51 +40,57 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Pagination
   const isLastPage = currentPage >= totalPages;
   const pageNumbers = getPageNumbers(currentPage, totalPages);
 
+  const baseBtn =
+    "inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-200";
+  const activeBtn =
+    "bg-[rgb(var(--accent))] text-white";
+  const inactiveBtn =
+    "text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-tertiary))] hover:text-[rgb(var(--text-primary))]";
+  const disabledBtn =
+    "text-[rgb(var(--text-tertiary))] opacity-40 cursor-not-allowed";
+
   return (
     <nav className="flex items-center justify-center gap-1 py-4" aria-label="分页导航">
-      {/* Mobile: simplified prev/next with page indicator */}
+      {/* Mobile: simplified */}
       <div className="flex md:hidden items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
+        <button
+          className={`${baseBtn} h-8 w-8 ${isFirstPage ? disabledBtn : inactiveBtn}`}
           disabled={isFirstPage}
           onClick={() => onPageChange(currentPage - 1)}
           aria-label="上一页"
         >
-          <ChevronLeft className="w-4 h-4" />
-        </Button>
-        <span className="text-sm text-muted-foreground whitespace-nowrap">
-          第 {currentPage} / {totalPages} 页
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <span className="text-xs text-[rgb(var(--text-tertiary))] whitespace-nowrap">
+          {currentPage} / {totalPages}
         </span>
-        <Button
-          variant="ghost"
-          size="icon"
+        <button
+          className={`${baseBtn} h-8 w-8 ${isLastPage ? disabledBtn : inactiveBtn}`}
           disabled={isLastPage}
           onClick={() => onPageChange(currentPage + 1)}
           aria-label="下一页"
         >
-          <ChevronRight className="w-4 h-4" />
-        </Button>
+          <ChevronRight className="h-4 w-4" />
+        </button>
       </div>
 
-      {/* Desktop: full pagination with page numbers */}
+      {/* Desktop */}
       <div className="hidden md:flex items-center gap-1">
-        <Button
-          variant="ghost"
-          size="sm"
+        <button
+          className={`${baseBtn} h-8 w-8 ${isFirstPage ? disabledBtn : inactiveBtn}`}
           disabled={isFirstPage}
           onClick={() => onPageChange(currentPage - 1)}
+          aria-label="上一页"
         >
-          <ChevronLeft className="w-4 h-4" />
-          上一页
-        </Button>
+          <ChevronLeft className="h-4 w-4" />
+        </button>
 
         {pageNumbers.map((page, index) => {
           if (page === "ellipsis") {
             return (
               <span
                 key={`ellipsis-${index}`}
-                className="px-2 text-sm text-muted-foreground"
+                className="flex h-8 w-8 items-center justify-center text-xs text-[rgb(var(--text-tertiary))]"
               >
                 ...
               </span>
@@ -93,26 +98,26 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Pagination
           }
 
           return (
-            <Button
+            <button
               key={page}
-              variant={page === currentPage ? "default" : "ghost"}
-              size="sm"
+              className={`${baseBtn} h-8 min-w-[32px] px-2 ${
+                page === currentPage ? activeBtn : inactiveBtn
+              }`}
               onClick={() => onPageChange(page)}
             >
               {page}
-            </Button>
+            </button>
           );
         })}
 
-        <Button
-          variant="ghost"
-          size="sm"
+        <button
+          className={`${baseBtn} h-8 w-8 ${isLastPage ? disabledBtn : inactiveBtn}`}
           disabled={isLastPage}
           onClick={() => onPageChange(currentPage + 1)}
+          aria-label="下一页"
         >
-          下一页
-          <ChevronRight className="w-4 h-4" />
-        </Button>
+          <ChevronRight className="h-4 w-4" />
+        </button>
       </div>
     </nav>
   );

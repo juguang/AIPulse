@@ -1,10 +1,10 @@
-import { useFeedStore } from "@/stores/feed-store";
 import type { FeedItem } from "@/types/items";
 import { NewsCard } from "@/components/feed/news-card";
 import { Pagination } from "@/components/feed/pagination";
 import { LoadingSkeleton } from "@/components/state/loading-skeleton";
 import { EmptyState } from "@/components/state/empty-state";
 import { ErrorState } from "@/components/state/error-state";
+import { useFeedStore } from "@/stores/feed-store";
 
 interface FeedListProps {
   items: FeedItem[];
@@ -46,26 +46,27 @@ function groupByDate(items: FeedItem[]): Map<string, FeedItem[]> {
   return groups;
 }
 
-function TimelineItem({ item, isLast }: { item: FeedItem; isLast: boolean }) {
+function TimelineItem({ item, index }: { item: FeedItem; index: number }) {
   return (
-    <div className="relative flex gap-4">
-      {/* Left: timeline dot + time */}
-      <div className="flex flex-col items-center">
-        {/* Vertical line above dot */}
-        <div className="w-px bg-border min-h-[12px]" />
-        {/* Dot */}
-        <div className="w-2 h-2 rounded-full bg-primary/30 flex-shrink-0" />
-        {/* Time below dot */}
-        <time className="text-[11px] text-muted-foreground tabular-nums mt-1.5 whitespace-nowrap">
-          {formatTime(item.published_at)}
-        </time>
-        {/* Vertical line below (extends to next item) */}
-        {!isLast && <div className="w-px bg-border flex-1 mt-1.5" />}
-      </div>
+    <div
+      className="animate-stagger pl-5"
+      style={{ animationDelay: `${index * 60}ms` }}
+    >
+      <div className="relative flex gap-4">
+        {/* Timeline dot + time */}
+        <div className="flex flex-col items-center">
+          <div className="relative flex items-center justify-center">
+            <div className="h-2 w-2 rounded-full bg-[rgb(var(--timeline-dot))] ring-4 ring-[rgb(var(--bg-primary))] group-hover:animate-pulse-dot-strong transition-all duration-200" />
+          </div>
+          <time className="mt-1.5 whitespace-nowrap text-[11px] tabular-nums tracking-tight text-[rgb(var(--text-tertiary))]">
+            {formatTime(item.published_at)}
+          </time>
+        </div>
 
-      {/* Right: card */}
-      <div className="flex-1 pb-6">
-        <NewsCard item={item} />
+        {/* Card */}
+        <div className="flex-1 pb-5 min-w-0">
+          <NewsCard item={item} index={index} />
+        </div>
       </div>
     </div>
   );
@@ -83,7 +84,7 @@ export function FeedList({
   const searchQuery = useFeedStore((s) => s.searchQuery);
 
   if (isLoading) {
-    return <LoadingSkeleton count={5} />;
+    return <LoadingSkeleton count={6} />;
   }
 
   if (error) {
@@ -98,31 +99,30 @@ export function FeedList({
   const groups = groupByDate(items);
 
   return (
-    <div className="flex flex-col">
+    <div className="space-y-1">
       {Array.from(groups.entries()).map(([dateKey, dateItems]) => (
         <div key={dateKey}>
-          {/* Date header with timeline dot */}
-          <div className="relative flex items-center gap-4 pl-[5px]">
-            <div className="w-3 h-3 rounded-full border-2 border-primary bg-background flex-shrink-0 z-10" />
-            <span className="text-sm font-medium text-foreground">
-              {formatDateLabel(new Date(dateItems[0].published_at), today)}
+          {/* Date section header with horizontal rule */}
+          <div className="relative flex items-center gap-3 py-3">
+            <div className="h-1 w-1 rounded-full bg-[rgb(var(--accent))] flex-shrink-0" />
+            <span className="text-xs font-medium uppercase tracking-[0.15em] text-[rgb(var(--text-tertiary))]">
+              {dateItems[0] ? formatDateLabel(new Date(dateItems[0].published_at), today) : dateKey}
             </span>
+            <div className="flex-1 h-px bg-[rgb(var(--border-light))]" />
           </div>
 
-          {/* Timeline line from date header dot down */}
-          <div className="ml-[17px] border-l border-border">
-            {dateItems.map((item, idx) => (
-              <TimelineItem
-                key={item.id}
-                item={item}
-                isLast={idx === dateItems.length - 1}
-              />
-            ))}
-          </div>
+          {/* Items */}
+          {dateItems.map((item, idx) => (
+            <TimelineItem
+              key={item.id}
+              item={item}
+              index={idx}
+            />
+          ))}
         </div>
       ))}
 
-      <div className="mt-4">
+      <div className="pt-2">
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}

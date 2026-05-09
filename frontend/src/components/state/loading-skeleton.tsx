@@ -1,28 +1,43 @@
-import { Skeleton } from "@/components/ui/skeleton";
-
 interface LoadingSkeletonProps {
   count?: number;
 }
 
+function SkeletonBlock({ className }: { className?: string }) {
+  return (
+    <div
+      className={`rounded-lg bg-[rgb(var(--skeleton))] animate-pulse ${className ?? ""}`}
+    />
+  );
+}
+
 export function LoadingSkeleton({ count = 3 }: LoadingSkeletonProps) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="space-y-4">
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="w-full rounded-xl border bg-card text-card-foreground shadow-sm p-4 space-y-3"
+          className="overflow-hidden rounded-xl bg-[var(--color-card)] shadow-[var(--card-shadow)]"
         >
-          {/* Title skeleton */}
-          <Skeleton className="h-5 w-3/4" />
-          {/* Summary skeleton - two lines */}
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-5/6" />
-          </div>
-          {/* Tags skeleton */}
-          <div className="flex gap-2">
-            <Skeleton className="h-5 w-16 rounded-full" />
-            <Skeleton className="h-5 w-20 rounded-full" />
+          <div className="p-4 md:p-5" style={{ paddingLeft: "21px" }}>
+            {/* Source badge */}
+            <SkeletonBlock className="mb-3 h-5 w-20 rounded-full" />
+
+            {/* Title */}
+            <SkeletonBlock className="mb-2 h-6 w-3/4" />
+            <SkeletonBlock className="mb-1 h-6 w-1/2" />
+
+            {/* Summary lines */}
+            <div className="mt-3 space-y-2">
+              <SkeletonBlock className="h-4 w-full" />
+              <SkeletonBlock className="h-4 w-5/6" />
+              <SkeletonBlock className="h-4 w-2/3" />
+            </div>
+
+            {/* Tags */}
+            <div className="mt-3 flex gap-1.5">
+              <SkeletonBlock className="h-5 w-14 rounded-md" />
+              <SkeletonBlock className="h-5 w-20 rounded-md" />
+            </div>
           </div>
         </div>
       ))}

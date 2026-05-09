@@ -1,9 +1,7 @@
-import { Badge } from "@/components/ui/badge";
-
-interface TagChipProps {
-  label: string;
-}
-
-export function TagChip({ label }: TagChipProps) {
-  return <Badge variant="secondary">{label}</Badge>;
+export function TagChip({ label }: { label: string }) {
+  return (
+    <span className="inline-block rounded-md border border-[rgb(var(--border-light))] bg-[rgb(var(--bg-tertiary))] px-2 py-0.5 text-[11px] font-medium text-[rgb(var(--text-secondary))]">
+      {label}
+    </span>
+  );
 }

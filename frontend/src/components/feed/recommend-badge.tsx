@@ -1,20 +1,17 @@
-import { Badge } from "@/components/ui/badge";
+import { Star } from "lucide-react";
 
-interface RecommendBadgeProps {
-  score: number | null;
-}
-
-export function RecommendBadge({ score }: RecommendBadgeProps) {
+export function RecommendBadge({ score }: { score: number | null }) {
   if (score === null || score < 5) return null;
 
-  const colorClass =
+  const color =
     score >= 8
-      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
-      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100";
+      ? "text-[rgb(var(--score-high))]"
+      : "text-[rgb(var(--score-mid))]";
 
   return (
-    <Badge className={colorClass}>
-      AI 推荐 {score.toFixed(1)}
-    </Badge>
+    <span className={`inline-flex items-center gap-1 text-xs font-medium ${color}`}>
+      <Star className="h-3 w-3 fill-current" />
+      {score.toFixed(1)}
+    </span>
   );
 }

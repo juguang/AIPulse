@@ -21,10 +21,16 @@ export function EmptyState({ type }: EmptyStateProps) {
   const { Icon, heading, body } = config[type];
 
   return (
-    <div className="flex flex-col items-center justify-center gap-4 py-16">
-      <Icon className="w-12 h-12 text-muted-foreground" />
-      <h2 className="text-2xl font-semibold">{heading}</h2>
-      <p className="text-muted-foreground text-center max-w-sm">{body}</p>
+    <div className="flex flex-col items-center justify-center gap-4 py-20">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[rgb(var(--bg-tertiary))]">
+        <Icon className="h-6 w-6 text-[rgb(var(--text-tertiary))]" />
+      </div>
+      <h2 className="font-serif text-xl text-[rgb(var(--text-primary))]">
+        {heading}
+      </h2>
+      <p className="max-w-xs text-center text-sm leading-relaxed text-[rgb(var(--text-secondary))]">
+        {body}
+      </p>
     </div>
   );
 }

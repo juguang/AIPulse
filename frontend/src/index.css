@@ -1,7 +1,220 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Hide scrollbar utility — used by CategoryTabs horizontal scroll */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-serif: "DM Serif Display", Georgia, serif;
+  --color-accent-bar: rgb(var(--accent));
+}
+
+/* ===== Light theme ===== */
+:root {
+  --bg-primary: 248 246 242;
+  --bg-secondary: 255 255 255;
+  --bg-tertiary: 242 239 234;
+  --accent: 0 102 255;
+  --accent-light: 235 242 255;
+  --accent-subtle: 0 102 255 / 0.08;
+  --text-primary: 26 26 46;
+  --text-secondary: 107 101 96;
+  --text-tertiary: 156 148 140;
+  --border: 229 224 216;
+  --border-light: 240 236 230;
+  --score-high: 5 150 105;
+  --score-mid: 217 119 6;
+  --timeline-line: 216 210 200;
+  --timeline-dot: 0 102 255;
+  --skeleton: 229 224 216;
+  --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --card-shadow-hover: 0 4px 12px 0 rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.08);
+
+  --color-background: rgb(248 246 242);
+  --color-foreground: rgb(26 26 46);
+  --color-card: rgb(255 255 255);
+  --color-card-foreground: rgb(26 26 46);
+  --color-popover: rgb(255 255 255);
+  --color-popover-foreground: rgb(26 26 46);
+  --color-primary: rgb(0 102 255);
+  --color-primary-foreground: rgb(255 255 255);
+  --color-secondary: rgb(242 239 234);
+  --color-secondary-foreground: rgb(26 26 46);
+  --color-muted: rgb(242 239 234);
+  --color-muted-foreground: rgb(107 101 96);
+  --color-accent: rgb(242 239 234);
+  --color-accent-foreground: rgb(26 26 46);
+  --color-destructive: rgb(220 38 38);
+  --color-destructive-foreground: rgb(255 255 255);
+  --color-border: rgb(229 224 216);
+  --color-input: rgb(229 224 216);
+  --color-ring: rgb(0 102 255);
+  --radius: 0.75rem;
+}
+
+/* ===== Dark theme ===== */
+.dark {
+  --bg-primary: 7 11 23;
+  --bg-secondary: 15 21 37;
+  --bg-tertiary: 20 27 45;
+  --accent: 75 139 255;
+  --accent-light: 15 25 55;
+  --accent-subtle: 75 139 255 / 0.1;
+  --text-primary: 232 230 227;
+  --text-secondary: 139 135 146;
+  --text-tertiary: 99 95 108;
+  --border: 30 39 64;
+  --border-light: 23 31 51;
+  --score-high: 52 211 153;
+  --score-mid: 251 191 36;
+  --timeline-line: 30 39 64;
+  --timeline-dot: 75 139 255;
+  --skeleton: 30 39 64;
+  --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.25), 0 1px 2px -1px rgb(0 0 0 / 0.35);
+  --card-shadow-hover: 0 6px 20px 0 rgb(0 0 0 / 0.35), 0 2px 6px -2px rgb(0 0 0 / 0.45);
+
+  --color-background: rgb(7 11 23);
+  --color-foreground: rgb(232 230 227);
+  --color-card: rgb(15 21 37);
+  --color-card-foreground: rgb(232 230 227);
+  --color-popover: rgb(15 21 37);
+  --color-popover-foreground: rgb(232 230 227);
+  --color-primary: rgb(75 139 255);
+  --color-primary-foreground: rgb(255 255 255);
+  --color-secondary: rgb(20 27 45);
+  --color-secondary-foreground: rgb(232 230 227);
+  --color-muted: rgb(20 27 45);
+  --color-muted-foreground: rgb(139 135 146);
+  --color-accent: rgb(20 27 45);
+  --color-accent-foreground: rgb(232 230 227);
+  --color-destructive: rgb(220 38 38);
+  --color-destructive-foreground: rgb(255 255 255);
+  --color-border: rgb(30 39 64);
+  --color-input: rgb(30 39 64);
+  --color-ring: rgb(75 139 255);
+}
+
+/* ===== Base styles ===== */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: "DM Sans", system-ui, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--border));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--text-tertiary));
+}
+
+/* Theme transition for common elements */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+/* ===== Animations ===== */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, rgb(var(--accent)) 30%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 8px color-mix(in srgb, rgb(var(--accent)) 0%, transparent);
+  }
+}
+
+@keyframes pulse-dot-strong {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, rgb(var(--accent)) 50%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 12px color-mix(in srgb, rgb(var(--accent)) 0%, transparent);
+  }
+}
+
+@keyframes theme-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes slide-line {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes accent-slide {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* ===== Animation utilities ===== */
+.animate-stagger {
+  animation: fade-in-up 0.5s ease both;
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.animate-theme-spin {
+  animation: theme-spin 0.5s ease;
+}
+
+/* ===== Custom utilities ===== */
 @utility scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;

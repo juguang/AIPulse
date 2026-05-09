@@ -1,7 +1,5 @@
 import { useState, useCallback } from "react";
 import { ImageOff } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 
 interface ImageProxyProps {
   src: string | null;
@@ -27,27 +25,25 @@ export function ImageProxy({ src, alt = "" }: ImageProxyProps) {
 
   if (status === "error") {
     return (
-      <div className="relative aspect-video rounded-lg bg-muted flex items-center justify-center">
-        <ImageOff className="w-8 h-8 text-muted-foreground" />
+      <div className="relative flex aspect-video items-center justify-center rounded-lg bg-[rgb(var(--bg-tertiary))]">
+        <ImageOff className="h-6 w-6 text-[rgb(var(--text-tertiary))]" />
       </div>
     );
   }
 
   return (
-    <div className="relative aspect-video rounded-lg overflow-hidden">
+    <div className="relative aspect-video overflow-hidden rounded-lg">
       {status === "loading" && (
-        <Skeleton className="absolute inset-0 rounded-lg" />
+        <div className="absolute inset-0 bg-[rgb(var(--skeleton))] animate-pulse rounded-lg" />
       )}
       <img
         src={proxyUrl}
         alt={alt}
         onLoad={handleLoad}
         onError={handleError}
-        className={cn(
-          "w-full h-full object-cover rounded-lg transition-transform duration-200",
-          status === "loaded" && "hover:scale-[1.02]",
-          status === "loading" && "opacity-0",
-        )}
+        className={`h-full w-full rounded-lg object-cover transition-all duration-300 ${
+          status === "loaded" ? "opacity-100" : "opacity-0"
+        }`}
       />
     </div>
   );
