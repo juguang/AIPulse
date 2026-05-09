@@ -18,4 +18,5 @@ from app.crawler import opencli_web_fetcher  # noqa: F401
 from app.crawler import hn_fetcher  # noqa: F401
 from app.crawler import twitter_fetcher  # noqa: F401
 from app.crawler import hf_fetcher  # noqa: F401
+from app.crawler import hf_papers_fetcher  # noqa: F401
 from app.crawler import web_fetcher  # noqa: F401
