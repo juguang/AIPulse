@@ -24,12 +24,24 @@ class RSSFetcher(BaseFetcher):
             resp.raise_for_status()
 
         feed = feedparser.parse(resp.text)
+
+        # Fallback: use feed-level lastBuildDate or updated when entries lack timestamps
+        feed_published = None
+        if hasattr(feed.feed, "updated_parsed") and feed.feed.updated_parsed:
+            feed_published = datetime(*feed.feed.updated_parsed[:6], tzinfo=timezone.utc)
+        elif hasattr(feed.feed, "lastbuilddate_parsed") and feed.feed.lastbuilddate_parsed:
+            feed_published = datetime(*feed.feed.lastbuilddate_parsed[:6], tzinfo=timezone.utc)
+
         items = []
-        for entry in feed.entries:
+        for i, entry in enumerate(feed.entries):
             published = entry.get("published_parsed") or entry.get("updated_parsed")
             pub_dt = (
-                datetime(*published[:6], tzinfo=timezone.utc) if published else None
+                datetime(*published[:6], tzinfo=timezone.utc) if published
+                else feed_published
             )
+            # Scatter items by a few hours when they share the same fallback time
+            if pub_dt == feed_published and i > 0:
+                pub_dt = pub_dt - __import__("datetime").timedelta(minutes=i * 15)
             link = (entry.get("link") or "").strip()
             items.append(
                 {
