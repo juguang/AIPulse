@@ -20,3 +20,4 @@ from app.crawler import twitter_fetcher  # noqa: F401
 from app.crawler import hf_fetcher  # noqa: F401
 from app.crawler import hf_papers_fetcher  # noqa: F401
 from app.crawler import web_fetcher  # noqa: F401
+from app.crawler import claude_fetcher  # noqa: F401

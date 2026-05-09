@@ -63,17 +63,27 @@ def _extract_date_from_text(text: str) -> datetime | None:
     return None
 
 
-def _parse_articles_from_markdown(md: str) -> list[dict[str, Any]]:
+def _parse_articles_from_markdown(md: str, base_url: str = "") -> list[dict[str, Any]]:
     """Parse article titles and links from markdown content."""
     items = []
     seen_urls = set()
+
+    def resolve_url(u: str) -> str:
+        if u.startswith("http"):
+            return u
+        if base_url and u.startswith("/"):
+            return base_url.rstrip("/") + u
+        if base_url and not u.startswith("#"):
+            return base_url.rstrip("/") + "/" + u.lstrip("/")
+        return u
+
     # Find links and their surrounding text (up to 200 chars after the link)
     pattern = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
     for m in pattern.finditer(md):
         title = m.group(1).strip()
-        url = m.group(2).strip()
-        if not url.startswith("http") or any(
-            skip in url for skip in ["javascript:", "cdn.", ".css", "avatar", "logo", "icon"]
+        url = resolve_url(m.group(2).strip())
+        if any(
+            skip in url for skip in ["javascript:", "cdn.", ".css", "avatar", "logo", "icon", "#"]
         ):
             continue
         if not title or len(title) < 4 or url in seen_urls:
@@ -187,5 +197,5 @@ class OpenCLIWebFetcher(BaseFetcher):
         if not markdown:
             return []
 
-        items = _parse_articles_from_markdown(markdown)
+        items = _parse_articles_from_markdown(markdown, base_url=url)
         return items[:limit]
