@@ -32,11 +32,20 @@ def normalize_url(url: str) -> str:
 
 
 def ensure_timezone(dt: Optional[datetime]) -> Optional[datetime]:
-    """确保 datetime 有时区信息，不支持的设为当前 UTC"""
+    """确保 datetime 有时区信息，不支持的设为当前 UTC。
+
+    如果解析出的时间在未来（超过 1 小时偏差），说明源时间戳
+    （如 RSS pubDate）可能因无时区信息导致解析偏差，
+    回退到当前 UTC 时间，避免前端显示未来时间。
+    """
     if dt is None:
         return datetime.now(timezone.utc)
     if dt.tzinfo is None:
-        return dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=timezone.utc)
+    # 超过 1 小时的未来时间 → 源时间戳偏差，回退到当前时间
+    now = datetime.now(timezone.utc)
+    if dt > now:
+        return now
     return dt
 
 
