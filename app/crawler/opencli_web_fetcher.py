@@ -44,15 +44,34 @@ async def _web_read(url: str) -> str:
     return ""
 
 
+MONTHS = {
+    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+    "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+}
+
+
+def _extract_date_from_text(text: str) -> datetime | None:
+    """Extract date from text like 'Apr 16, 2026' or 'ProductApr 16, 2026'."""
+    m = re.search(r"(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+(\d{1,2}),?\s+(\d{4})", text, re.IGNORECASE)
+    if m:
+        month = MONTHS.get(m[1].lower()[:3])
+        if month:
+            try:
+                return datetime(int(m[3]), month, int(m[2]), tzinfo=timezone.utc)
+            except ValueError:
+                pass
+    return None
+
+
 def _parse_articles_from_markdown(md: str) -> list[dict[str, Any]]:
     """Parse article titles and links from markdown content."""
     items = []
     seen_urls = set()
-    links = re.findall(r"\[([^\]]+)\]\(([^)]+)\)", md)
-
-    for title, url in links:
-        url = url.strip()
-        title = title.strip()
+    # Find links and their surrounding text (up to 200 chars after the link)
+    pattern = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
+    for m in pattern.finditer(md):
+        title = m.group(1).strip()
+        url = m.group(2).strip()
         if not url.startswith("http") or any(
             skip in url for skip in ["javascript:", "cdn.", ".css", "avatar", "logo", "icon"]
         ):
@@ -60,10 +79,17 @@ def _parse_articles_from_markdown(md: str) -> list[dict[str, Any]]:
         if not title or len(title) < 4 or url in seen_urls:
             continue
         seen_urls.add(url)
+
+        # Look for date in surrounding text (150 chars before and after)
+        start = max(0, m.start() - 150)
+        end = min(len(md), m.end() + 150)
+        context = md[start:end]
+        pub_date = _extract_date_from_text(context)
+
         items.append({
             "guid": url, "title": title[:300], "url": url,
             "content_raw": "", "author": None,
-            "published_at": ensure_timezone(None),
+            "published_at": ensure_timezone(pub_date),
             "raw_data": {"source": "opencli_web"},
         })
     return items
