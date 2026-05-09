@@ -26,7 +26,6 @@ from sqlalchemy.orm import selectinload
 from app.config import settings
 from app.database import AsyncSessionLocal
 from app.llm.client import LLMClients
-from app.llm.cost_tracker import CostInfo
 from app.llm.prompts import (
     CLASSIFICATION_SYSTEM,
     CLASSIFICATION_USER,
@@ -159,13 +158,23 @@ async def process_single_item(
         content = item.content_normalized or item.content_raw or ""
 
         # --- Phase 3: Classification + Tagging ---
-        # Pre-classify paper sources to avoid wasting LLM tokens
+        # Paper sources: use LLM for tags but force "论文" category
         if source_type in ("arxiv", "hf_papers"):
-            category = "论文"
-            tags = []
-            class_cost = CostInfo(
-                model="pre-classified", input_tokens=0, output_tokens=0, cost_usd=0
+            classification_user = CLASSIFICATION_USER.format(
+                source_type=source_type,
+                source_name=source_name,
+                title=item.title,
+                summary="",
+                content=content[:4000],
             )
+            class_result, class_cost = await router.process(
+                "classification",
+                system_prompt=CLASSIFICATION_SYSTEM,
+                user_prompt=classification_user,
+            )
+            class_data = _extract_json(class_result)
+            category = "论文"
+            tags = class_data.get("tags", [])
         else:
             classification_user = CLASSIFICATION_USER.format(
                 source_type=source_type,
