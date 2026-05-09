@@ -3,7 +3,6 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
 
 from app.database import get_db
 from app.models.processed_item import ProcessedItem
@@ -33,7 +32,7 @@ async def list_items(
     当 category 不为 None 且不为 "全部" 时按分类筛选。
     当 search 不为空时按标题或标准化内容模糊搜索。
     """
-    # Build query: LEFT JOIN so unprocessed items also appear
+    # Build query: only show processed items (with tags/category/score)
     base_query = (
         select(
             RawItem,
@@ -41,8 +40,8 @@ async def list_items(
             SourceConfig.name,
         )
         .join(SourceConfig, RawItem.source_id == SourceConfig.id)
-        .outerjoin(ProcessedItem, ProcessedItem.raw_item_id == RawItem.id)
-        .where(RawItem.status.in_(["pending", "processed", "duplicate"]))
+        .join(ProcessedItem, ProcessedItem.raw_item_id == RawItem.id)
+        .where(RawItem.status == "processed")
     )
 
     # Category filter (only for processed items)
@@ -62,8 +61,8 @@ async def list_items(
     # Count
     count_query = select(func.count()).select_from(RawItem).join(
         SourceConfig, RawItem.source_id == SourceConfig.id
-    ).outerjoin(ProcessedItem, ProcessedItem.raw_item_id == RawItem.id).where(
-        RawItem.status.in_(["pending", "processed", "duplicate"])
+    ).join(ProcessedItem, ProcessedItem.raw_item_id == RawItem.id).where(
+        RawItem.status == "processed"
     )
     if category and category != "全部":
         count_query = count_query.where(ProcessedItem.category == category)
@@ -85,7 +84,6 @@ async def list_items(
     items = []
     for raw_item, processed_item, source_name in rows:
         extra = raw_item.extra_data or {}
-        pi = processed_item  # may be None for unprocessed items
 
         items.append(
             FeedItemResponse(
@@ -95,11 +93,11 @@ async def list_items(
                 source_name=source_name,
                 author=raw_item.author,
                 published_at=raw_item.published_at,
-                summary=pi.summary if pi else None,
-                tags=pi.tags if pi and isinstance(pi.tags, list) else None,
-                category=pi.category if pi else None,
-                recommended_score=pi.recommended_score if pi else 0.0,
-                recommendation_reason=pi.recommendation_reason if pi else None,
+                summary=processed_item.summary,
+                tags=processed_item.tags if isinstance(processed_item.tags, list) else None,
+                category=processed_item.category,
+                recommended_score=processed_item.recommended_score,
+                recommendation_reason=processed_item.recommendation_reason,
                 image_url=extra.get("image_url"),
                 created_at=raw_item.created_at,
             )
