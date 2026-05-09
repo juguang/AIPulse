@@ -1,5 +1,5 @@
 [project]
-name = "aihot"
+name = "aipulse"
 version = "0.1.0"
 description = "AI Pulse - AI 资讯精选聚合平台"
 requires-python = ">=3.13"
@@ -19,6 +19,7 @@ dependencies = [
     "sentence-transformers>=3.0.0",
     "sqlalchemy[asyncio]>=2.0.30",
     "uvicorn>=0.30.0",
+    "psycopg2-binary>=2.9.12",
 ]
 
 [dependency-groups]

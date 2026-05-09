@@ -33,7 +33,7 @@ class HackerNewsFetcher(BaseFetcher):
     """HackerNews fetcher via opencli."""
 
     async def fetch(self) -> list[dict[str, Any]]:
-        limit = self.source.config.get("limit", 30)
+        limit = self.get_config("limit", 30)
         data = await _run_opencli("hackernews", "top")
         items = []
         for item in data[:limit]:
@@ -60,8 +60,8 @@ class ArxivFetcher(BaseFetcher):
     """arXiv fetcher via opencli (recent papers in AI category)."""
 
     async def fetch(self) -> list[dict[str, Any]]:
-        category = self.source.config.get("category", "cs.AI")
-        limit = self.source.config.get("limit", 50)
+        category = self.get_config("category", "cs.AI")
+        limit = self.get_config("limit", 50)
         data = await _run_opencli("arxiv", "recent", category)
         items = []
         for item in data[:limit]:

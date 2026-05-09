@@ -18,6 +18,11 @@ class BaseFetcher(ABC):
     def __init__(self, source: SourceConfig):
         self.source = source
 
+    def get_config(self, key: str, default: Any = None) -> Any:
+        """Safe access to source config, returns default if not available."""
+        config = getattr(self.source, "config", None) or {}
+        return config.get(key, default)
+
     @abstractmethod
     async def fetch(self) -> list[dict[str, Any]]:
         """获取并解析内容，返回规范化后的 article dict 列表。

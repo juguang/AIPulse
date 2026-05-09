@@ -48,7 +48,7 @@ class RawItem(Base):
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     retry_count: Mapped[int] = mapped_column(Integer, default=0)
     raw_data: Mapped[Optional[Dict]] = mapped_column(JSONB, nullable=True, default={})
-    metadata: Mapped[Optional[Dict]] = mapped_column(JSONB, nullable=True, default={})
+    extra_data: Mapped[Optional[Dict]] = mapped_column(JSONB, nullable=True, default={})
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

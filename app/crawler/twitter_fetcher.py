@@ -20,8 +20,8 @@ class TwitterFetcher(BaseFetcher):
     """
 
     async def fetch(self) -> list[dict[str, Any]]:
-        search_query = self.source.config.get("query", "AI")
-        limit = self.source.config.get("limit", 20)
+        search_query = self.get_config("query", "AI")
+        limit = self.get_config("limit", 20)
 
         proc = await asyncio.create_subprocess_exec(
             OPENCLI_BIN,

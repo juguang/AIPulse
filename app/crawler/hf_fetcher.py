@@ -19,7 +19,7 @@ class HFFetcher(BaseFetcher):
             return []
 
         api = HfApi()
-        limit = self.source.config.get("limit", 20)
+        limit = self.get_config("limit", 20)
 
         try:
             papers = api.list_daily_papers()
