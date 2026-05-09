@@ -2,7 +2,8 @@
 
 import json
 import asyncio
-from datetime import datetime, timezone
+import hashlib
+from datetime import datetime, timezone, timedelta
 from typing import Any
 
 from app.crawler.base import BaseFetcher
@@ -28,6 +29,22 @@ async def _run_opencli(*args: str) -> list[dict[str, Any]]:
     return json.loads(stdout.decode())
 
 
+def _scatter_time(dt: datetime | None, seed: str = "") -> datetime | None:
+    """Add a pseudo-random minute offset to date-only timestamps.
+
+    Academic papers often only have a date (midnight). This spreads them
+    across the day using the paper ID as a seed, so they don't all stack
+    at 00:00 in the timeline view.
+    """
+    if dt is None:
+        return None
+    if dt.hour != 0 or dt.minute != 0 or dt.second != 0:
+        return dt  # Already has a time component
+    h = int(hashlib.md5(seed.encode()).hexdigest(), 16) if seed else 0
+    offset = timedelta(hours=h % 14 + 6, minutes=h // 14 % 60)  # 06:00 - 19:59
+    return dt + offset
+
+
 @register_fetcher("hackernews")
 class HackerNewsFetcher(BaseFetcher):
     """HackerNews fetcher via opencli."""
@@ -50,34 +67,6 @@ class HackerNewsFetcher(BaseFetcher):
                         else None
                     ),
                     "raw_data": {"source": "hackernews"},
-                }
-            )
-        return items
-
-
-@register_fetcher("arxiv")
-class ArxivFetcher(BaseFetcher):
-    """arXiv fetcher via opencli (recent papers in AI category)."""
-
-    async def fetch(self) -> list[dict[str, Any]]:
-        category = self.get_config("category", "cs.AI")
-        limit = self.get_config("limit", 50)
-        data = await _run_opencli("arxiv", "recent", category)
-        items = []
-        for item in data[:limit]:
-            items.append(
-                {
-                    "guid": item.get("id", ""),
-                    "title": (item.get("title") or "").strip(),
-                    "url": (item.get("link") or item.get("id") or ""),
-                    "content_raw": (item.get("summary") or ""),
-                    "author": (item.get("authors") or item.get("author") or ""),
-                    "published_at": ensure_timezone(
-                        datetime.fromisoformat(item["published"].replace("Z", "+00:00"))
-                        if item.get("published")
-                        else None
-                    ),
-                    "raw_data": {"source": "arxiv"},
                 }
             )
         return items

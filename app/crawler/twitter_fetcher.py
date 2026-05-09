@@ -2,7 +2,8 @@
 
 import json
 import asyncio
-from datetime import datetime, timezone
+import hashlib
+from datetime import datetime, timezone, timedelta
 from typing import Any
 
 from app.crawler.base import BaseFetcher
@@ -10,6 +11,22 @@ from app.crawler.registry import register_fetcher
 from app.crawler.normalizer import ensure_timezone
 
 OPENCLI_BIN = "OPENCLI_BIN"
+
+# Twitter snowflake epoch (2010-11-04)
+TWITTER_EPOCH = 1288834974657
+
+
+def _tweet_id_to_time(tweet_id: str) -> datetime | None:
+    """Extract timestamp from Twitter/X snowflake ID.
+
+    Twitter IDs encode milliseconds since the Twitter epoch.
+    """
+    try:
+        tid = int(tweet_id)
+        ts_ms = (tid >> 22) + TWITTER_EPOCH
+        return datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
+    except (ValueError, TypeError):
+        return None
 
 
 @register_fetcher("twitter")
@@ -41,8 +58,10 @@ class TwitterFetcher(BaseFetcher):
         tweets = data if isinstance(data, list) else data.get("tweets", data.get("data", [data]))
         items = []
         for t in tweets[:limit]:
-            created_at = None
-            if t.get("created_at"):
+            tweet_id = t.get("id_str") or t.get("id", "")
+            # Try snowflake ID first, fall back to created_at string
+            created_at = _tweet_id_to_time(tweet_id)
+            if created_at is None and t.get("created_at"):
                 try:
                     created_at = datetime.fromisoformat(t["created_at"].replace("Z", "+00:00"))
                 except (ValueError, TypeError):
@@ -50,7 +69,7 @@ class TwitterFetcher(BaseFetcher):
 
             items.append(
                 {
-                    "guid": t.get("id_str") or t.get("id", ""),
+                    "guid": tweet_id,
                     "title": (t.get("full_text") or t.get("text") or "")[:200],
                     "url": f"https://x.com/i/web/status/{t.get('id_str') or t.get('id', '')}",
                     "content_raw": t.get("full_text") or t.get("text") or "",
