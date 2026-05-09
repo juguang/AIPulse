@@ -23,6 +23,7 @@ class Settings(BaseSettings):
 
     # Default crawler interval (minutes)
     CRAWL_INTERVAL_MINUTES: int = 30
+    CRAWL_MAX_AGE_DAYS: int = 7
 
     # APScheduler sync DSN; auto-derived from DATABASE_URL if empty
     SCHEDULER_DATABASE_URL: str = ""

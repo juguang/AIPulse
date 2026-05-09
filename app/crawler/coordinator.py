@@ -1,7 +1,7 @@
 """Crawl orchestration with source isolation and health tracking."""
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Any
 
 from sqlalchemy import select
@@ -12,6 +12,7 @@ from app.crawler.normalizer import normalize_url, compute_content_hash, ensure_t
 from app.models.raw_item import RawItem
 from app.models.source_config import SourceConfig
 from app.database import AsyncSessionLocal
+from app.config import settings
 
 
 async def _update_source_health(source_id: int, success: bool, error_msg: str | None = None):
@@ -74,8 +75,13 @@ async def crawl_single_source(source: SourceConfig) -> dict[str, Any]:
         return result
 
     inserted = 0
+    max_age = datetime.now(timezone.utc) - timedelta(days=settings.CRAWL_MAX_AGE_DAYS)
+
     async with AsyncSessionLocal() as session:
         for article in articles:
+            pub_at = ensure_timezone(article.get("published_at"))
+            if pub_at and pub_at < max_age:
+                continue
             try:
                 raw = RawItem(
                     source_id=source.id,

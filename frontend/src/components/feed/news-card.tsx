@@ -1,7 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { SourceBadge } from "@/components/feed/source-badge";
-import { RelativeTime } from "@/components/feed/relative-time";
 import { ImageProxy } from "@/components/feed/image-proxy";
 import { TagChip } from "@/components/feed/tag-chip";
 import { RecommendBadge } from "@/components/feed/recommend-badge";
@@ -21,10 +20,9 @@ export function NewsCard({ item }: NewsCardProps) {
     >
       <Card className="hover:shadow-md hover:border-accent cursor-pointer transition-all duration-200">
         <CardContent className="p-4 space-y-3">
-          {/* Row 1: SourceBadge + RelativeTime */}
+          {/* Row 1: SourceBadge */}
           <div className="flex justify-between items-center">
             <SourceBadge name={item.source_name} />
-            <RelativeTime datetime={item.published_at} />
           </div>
 
           <Separator />
