@@ -39,9 +39,10 @@ class RSSFetcher(BaseFetcher):
                 datetime(*published[:6], tzinfo=timezone.utc) if published
                 else feed_published
             )
-            # Scatter items by a few hours when they share the same fallback time
+            # Scatter items without real dates using current time as base
+            # (ensuring all timestamps are in the past, not relative to feed_published)
             if pub_dt == feed_published and i > 0:
-                pub_dt = pub_dt - __import__("datetime").timedelta(minutes=i * 15)
+                pub_dt = datetime.now(timezone.utc) - __import__("datetime").timedelta(minutes=i * 15)
             link = (entry.get("link") or "").strip()
             items.append(
                 {
