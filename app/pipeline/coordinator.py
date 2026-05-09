@@ -21,6 +21,7 @@ from typing import Optional
 
 import numpy as np
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.config import settings
 from app.database import AsyncSessionLocal
@@ -118,7 +119,11 @@ async def process_single_item(
     """
     # --- Phase 1: Fetch and lock item ---
     async with AsyncSessionLocal() as db:
-        result = await db.execute(select(RawItem).where(RawItem.id == item_id))
+        result = await db.execute(
+            select(RawItem)
+            .options(selectinload(RawItem.source))
+            .where(RawItem.id == item_id)
+        )
         item = result.scalar_one_or_none()
         if item is None:
             logger.warning("Item %d not found — skipping", item_id)
@@ -133,6 +138,9 @@ async def process_single_item(
 
         item.status = "processing"
         await db.commit()
+
+    source_type = item.source.type if item.source else ""
+    source_name = item.source.name if item.source else ""
 
     try:
         # --- Phase 2: Layer 3 Semantic Dedup ---
@@ -151,19 +159,29 @@ async def process_single_item(
         content = item.content_normalized or item.content_raw or ""
 
         # --- Phase 3: Classification + Tagging ---
-        classification_user = CLASSIFICATION_USER.format(
-            title=item.title,
-            summary="",
-            content=content[:4000],
-        )
-        class_result, class_cost = await router.process(
-            "classification",
-            system_prompt=CLASSIFICATION_SYSTEM,
-            user_prompt=classification_user,
-        )
-        class_data = _extract_json(class_result)
-        category = class_data.get("category", "行业")
-        tags = class_data.get("tags", [])
+        # Pre-classify paper sources to avoid wasting LLM tokens
+        if source_type in ("arxiv", "hf_papers"):
+            category = "论文"
+            tags = []
+            class_cost = CostInfo(
+                model="pre-classified", input_tokens=0, output_tokens=0, cost_usd=0
+            )
+        else:
+            classification_user = CLASSIFICATION_USER.format(
+                source_type=source_type,
+                source_name=source_name,
+                title=item.title,
+                summary="",
+                content=content[:4000],
+            )
+            class_result, class_cost = await router.process(
+                "classification",
+                system_prompt=CLASSIFICATION_SYSTEM,
+                user_prompt=classification_user,
+            )
+            class_data = _extract_json(class_result)
+            category = class_data.get("category", "行业")
+            tags = class_data.get("tags", [])
 
         # --- Phase 4: Summarization ---
         summarization_user = SUMMARIZATION_USER.format(
