@@ -10,7 +10,7 @@ import json
 import asyncio
 import re
 import gzip
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Any
 from urllib.parse import urljoin
 
@@ -70,8 +70,9 @@ def _parse_articles_from_markdown(md: str) -> list[dict[str, Any]]:
 
 
 def _extract_date_from_url(url: str) -> datetime | None:
-    """Extract date from URL patterns like /YYYY-MM-DD-N or /YYYY/MM/DD."""
-    m = re.search(r"/(\d{4})-(\d{2})-(\d{2})", url)
+    """Extract date from URL patterns like /2026-05-09-11 or /2024-7-31."""
+    # Match YYYY-MM-DD (with optional single-digit month/day)
+    m = re.search(r"/(\d{4})-(\d{1,2})-(\d{1,2})(?:[^0-9]|$)", url)
     if m:
         try:
             return datetime(int(m[1]), int(m[2]), int(m[3]), tzinfo=timezone.utc)
@@ -114,13 +115,14 @@ async def _fetch_sitemap_urls(sitemap_url: str, limit: int = 50) -> list[dict[st
                 continue
             seen.add(loc)
 
-            # Prefer URL-embedded date over lastmod (sitemap bulk updates)
+            # Only use URL-embedded dates (lastmod is unreliable for sitemaps)
             pub_date = _extract_date_from_url(loc)
-            if pub_date is None and lastmod:
-                try:
-                    pub_date = datetime.fromisoformat(lastmod.replace("Z", "+00:00"))
-                except (ValueError, TypeError):
-                    pass
+            if pub_date is None:
+                continue  # Skip articles without dates in URL
+
+            # Skip old articles
+            if pub_date < datetime.now(timezone.utc) - timedelta(days=7):
+                continue
 
             slug = loc.rstrip("/").rsplit("/", 1)[-1]
             items.append({
