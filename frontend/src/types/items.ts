@@ -17,7 +17,7 @@ export interface FeedItem {
   summary: string | null;
   /** processed_item.tags (JSONB array) */
   tags: string[] | null;
-  /** processed_item.category — 模型/产品/行业/论文/技巧 */
+  /** processed_item.category — 模型/产品/行业/研究/工程 */
   category: string | null;
   /** processed_item.recommended_score */
   recommended_score: number | null;

@@ -158,7 +158,7 @@ async def process_single_item(
         content = item.content_normalized or item.content_raw or ""
 
         # --- Phase 3: Classification + Tagging ---
-        # Paper sources: use LLM for tags but force "论文" category
+        # Paper sources: use LLM for tags but force "研究" category
         if source_type in ("arxiv", "hf_papers"):
             classification_user = CLASSIFICATION_USER.format(
                 source_type=source_type,
@@ -173,7 +173,7 @@ async def process_single_item(
                 user_prompt=classification_user,
             )
             class_data = _extract_json(class_result)
-            category = "论文"
+            category = "研究"
             tags = class_data.get("tags", [])
         else:
             classification_user = CLASSIFICATION_USER.format(

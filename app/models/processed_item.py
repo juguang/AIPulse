@@ -28,7 +28,7 @@ class ProcessedItem(Base):
     tags: Mapped[Optional[Dict]] = mapped_column(JSONB, nullable=True, default=[])
     category: Mapped[Optional[str]] = mapped_column(
         String(50), nullable=True, index=True
-    )  # 模型/产品/行业/论文/技巧
+    )  # 模型/产品/行业/研究/工程
     recommended_score: Mapped[Optional[float]] = mapped_column(
         Float, nullable=True, default=0.0
     )

@@ -1,7 +1,7 @@
 import { useCategories } from "@/hooks/use-categories";
 import { useFeedStore } from "@/stores/feed-store";
 
-const DEFAULT_CATEGORIES = ["全部", "模型", "产品", "行业", "论文", "技巧"];
+const DEFAULT_CATEGORIES = ["全部", "模型", "产品", "行业", "研究", "工程"];
 
 export function CategoryTabs() {
   const activeCategory = useFeedStore((s) => s.activeCategory);
