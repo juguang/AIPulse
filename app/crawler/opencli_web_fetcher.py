@@ -10,6 +10,7 @@ import json
 import asyncio
 import re
 import gzip
+import shutil
 from datetime import datetime, timezone, timedelta
 from typing import Any
 from urllib.parse import urljoin
@@ -20,7 +21,7 @@ from app.crawler.base import BaseFetcher
 from app.crawler.registry import register_fetcher
 from app.crawler.normalizer import ensure_timezone
 
-OPENCLI_BIN = "OPENCLI_BIN"
+OPENCLI_BIN = shutil.which("opencli") or "opencli"
 
 
 async def _web_read(url: str) -> str:

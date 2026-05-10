@@ -3,6 +3,7 @@
 import json
 import asyncio
 import hashlib
+import shutil
 from datetime import datetime, timezone, timedelta
 from typing import Any
 
@@ -10,7 +11,7 @@ from app.crawler.base import BaseFetcher
 from app.crawler.registry import register_fetcher
 from app.crawler.normalizer import ensure_timezone
 
-OPENCLI_BIN = "OPENCLI_BIN"
+OPENCLI_BIN = shutil.which("opencli") or "opencli"
 
 # Twitter snowflake epoch (2010-11-04)
 TWITTER_EPOCH = 1288834974657

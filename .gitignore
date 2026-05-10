@@ -22,6 +22,9 @@ dist/
 pgdata/
 web-articles/
 
+# Planning docs (contain local filesystem paths)
+.planning/
+
 # Playwright MCP artifacts
 frontend/.playwright-mcp/
 .playwright-mcp/

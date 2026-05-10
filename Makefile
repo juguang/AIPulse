@@ -1,7 +1,13 @@
-.PHONY: dev dev-api dev-frontend db-start db-stop db-reset lint format
+.PHONY: dev dev-api dev-frontend db-start db-stop db-reset lint format setup install-all
 
 # 一键启动所有服务（需要先启动数据库）
 dev: dev-api dev-frontend
+
+# 一键安装所有依赖 + 数据库初始化
+setup: install install-frontend install-opencli db-create migrate
+
+# 安装所有依赖（不含数据库操作）
+install-all: install install-frontend install-opencli
 
 # 启动 FastAPI 后端（热重载）
 dev-api:
@@ -21,7 +27,7 @@ db-stop:
 
 # 创建数据库
 db-create:
-	createdb aihot
+	-createdb aihot 2>/dev/null; echo "Database aihot already exists, skipping"
 
 # 重置数据库
 db-reset:
@@ -42,6 +48,10 @@ install:
 # 安装前端依赖
 install-frontend:
 	cd frontend && pnpm install
+
+# 安装 OpenCLI（JS 渲染抓取、Twitter、HackerNews 需要）
+install-opencli:
+	npm install -g opencli
 
 # 代码检查
 lint:
