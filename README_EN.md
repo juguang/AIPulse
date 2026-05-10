@@ -24,45 +24,35 @@ Curated AI news aggregation platform — automatically crawls, classifies, tags,
 
 ## Quick Start
 
-### One-command Setup
-
-```bash
-make setup
-```
-
-Creates database → installs Python deps → installs frontend deps → installs OpenCLI → runs migrations.
-
-### Manual Setup
-
 ```bash
 # 1. Configure environment
 cp .env.example .env
 # Edit .env, fill in DEEPSEEK_API_KEY
 
-# 2. Create database
-make db-create
+# 2. Create PostgreSQL database
+createdb aihot
 
 # 3. Install backend
-make install
+uv sync
 
 # 4. Install frontend
-make install-frontend
+cd frontend && pnpm install
 
 # 5. Install OpenCLI (required by some sources)
-make install-opencli
+npm install -g opencli
 
 # 6. Run database migrations
-make migrate
+uv run alembic upgrade head
 ```
 
 ### Start Dev Server
 
 ```bash
 # Terminal 1: Backend API (hot-reload)
-make dev-api
+uv run uvicorn app.main:app --reload --port 8000
 
 # Terminal 2: Frontend dev server
-make dev-frontend
+cd frontend && pnpm dev
 ```
 
 Open http://localhost:5173 to browse.
