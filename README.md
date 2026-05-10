@@ -30,7 +30,7 @@ cp .env.example .env
 # 编辑 .env，填入 DEEPSEEK_API_KEY
 
 # 2. 创建 PostgreSQL 数据库
-createdb aihot
+createdb aipulse
 
 # 3. 安装后端依赖
 uv sync

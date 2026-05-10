@@ -30,7 +30,7 @@ cp .env.example .env
 # Edit .env, fill in DEEPSEEK_API_KEY
 
 # 2. Create PostgreSQL database
-createdb aihot
+createdb aipulse
 
 # 3. Install backend
 uv sync
