@@ -66,9 +66,9 @@ cd frontend && pnpm dev
 | `DATABASE_URL` | PostgreSQL 连接串 | `postgresql+asyncpg://localhost:5432/aipulse` |
 | `DEEPSEEK_API_KEY` | DeepSeek API 密钥 | （必填） |
 | `DEEPSEEK_BASE_URL` | DeepSeek API 地址 | `https://api.deepseek.com` |
-| `DEEPSEEK_MODEL` | AI 模型 | `deepseek-chat` |
+| `DEEPSEEK_MODEL` | AI 模型 | `deepseek-v4-flash` |
 | `CORS_ORIGINS` | 允许的前端地址 | `http://localhost:5173,http://localhost:3000` |
-| `AI_PIPELINE_BATCH_SIZE` | AI 处理批大小 | `20` |
+| `AI_PIPELINE_BATCH_SIZE` | AI 处理批大小 | `5` |
 
 ## 数据源说明
 

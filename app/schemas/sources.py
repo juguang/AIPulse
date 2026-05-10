@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 class SourceConfigCreate(BaseModel):
     name: str
-    type: str  # rss/x/web
+    type: str  # rss / opencli_web / hackernews / twitter / arxiv / hf_papers / ...
     url: str
     active: bool = True
     crawl_interval: int = 30

@@ -66,9 +66,9 @@ Copy `.env.example` to `.env` and configure:
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql+asyncpg://localhost:5432/aipulse` |
 | `DEEPSEEK_API_KEY` | DeepSeek API key | **(required)** |
 | `DEEPSEEK_BASE_URL` | DeepSeek API endpoint | `https://api.deepseek.com` |
-| `DEEPSEEK_MODEL` | AI model name | `deepseek-chat` |
+| `DEEPSEEK_MODEL` | AI model name | `deepseek-v4-flash` |
 | `CORS_ORIGINS` | Allowed frontend origins | `http://localhost:5173,http://localhost:3000` |
-| `AI_PIPELINE_BATCH_SIZE` | AI processing batch size | `20` |
+| `AI_PIPELINE_BATCH_SIZE` | AI processing batch size | `5` |
 
 ## Data Sources
 
