@@ -80,14 +80,17 @@ def start_scheduler() -> AsyncIOScheduler:
         replace_existing=True,
         misfire_grace_time=300,
     )
-    pipeline_interval = settings.AI_PIPELINE_INTERVAL_MINUTES or max(1, interval_minutes // 2)
+    if settings.AI_PIPELINE_INTERVAL_SECONDS > 0:
+        pipeline_kwargs = {"seconds": settings.AI_PIPELINE_INTERVAL_SECONDS}
+    else:
+        pipeline_kwargs = {"minutes": settings.AI_PIPELINE_INTERVAL_MINUTES or max(1, interval_minutes // 2)}
     scheduler.add_job(
         _pipeline_job,
         "interval",
-        minutes=pipeline_interval,
+        **pipeline_kwargs,
         id=JOB_ID_PIPELINE,
         replace_existing=True,
-        misfire_grace_time=300,
+        misfire_grace_time=120,
     )
 
     scheduler.start()
