@@ -1,6 +1,6 @@
 [project]
 name = "aipulse"
-version = "0.1.0"
+version = "0.2.0"
 description = "AI Pulse - AI 资讯精选聚合平台"
 requires-python = ">=3.13"
 dependencies = [
