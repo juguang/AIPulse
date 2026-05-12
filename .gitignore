@@ -28,3 +28,4 @@ web-articles/
 # Playwright MCP artifacts
 frontend/.playwright-mcp/
 .playwright-mcp/
+aipulse.db
