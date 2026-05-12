@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     CRAWL_INTERVAL_MINUTES: int = 30
     CRAWL_MAX_AGE_DAYS: int = 3
 
+    # AI pipeline interval (minutes); defaults to half of CRAWL_INTERVAL_MINUTES
+    AI_PIPELINE_INTERVAL_MINUTES: int = 0  # 0 means auto-derive
+
     # APScheduler sync DSN; auto-derived from DATABASE_URL if empty
     SCHEDULER_DATABASE_URL: str = ""
 
