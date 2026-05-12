@@ -4,10 +4,10 @@ version = "0.1.0"
 description = "AI Pulse - AI 资讯精选聚合平台"
 requires-python = ">=3.13"
 dependencies = [
+    "aiosqlite>=0.20.0",
+    "alembic>=1.14.0",
     "apscheduler>=3.10.4",
     "arxiv>=3.0.0",
-    "asyncpg>=0.30.0",
-    "alembic>=1.14.0",
     "beautifulsoup4>=4.12.0",
     "fastapi[standard]>=0.115.0",
     "feedparser>=6.0.0",
@@ -16,10 +16,8 @@ dependencies = [
     "lxml>=5.0.0",
     "openai>=2.15.0",
     "pydantic-settings>=2.0.0",
-    "sentence-transformers>=3.0.0",
     "sqlalchemy[asyncio]>=2.0.30",
     "uvicorn>=0.30.0",
-    "psycopg2-binary>=2.9.12",
 ]
 
 [dependency-groups]

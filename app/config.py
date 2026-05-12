@@ -3,7 +3,7 @@ from typing import List
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "postgresql+asyncpg://localhost:5432/aipulse"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./aipulse.db"
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
@@ -13,8 +13,6 @@ class Settings(BaseSettings):
     DEEPSEEK_API_KEY: str = ""
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
     DEEPSEEK_MODEL: str = "deepseek-v4-flash"
-
-    SENTENCE_TRANSFORMERS_MODEL: str = "all-MiniLM-L6-v2"
 
     # LLM retry and pipeline settings
     MAX_RETRIES: int = 3
