@@ -1,123 +1,101 @@
-"""Semantic deduplication using sentence-transformers embeddings.
+"""Title-based near-duplicate detection using string similarity.
 
 Three-layer dedup architecture:
     Layer 1: content_hash UNIQUE (DB constraint in raw_items)
     Layer 2: (source_id, guid) UNIQUE (DB constraint in raw_items)
-    Layer 3: This module — sentence-transformers 384-dim embeddings + cosine similarity
+    Layer 3: This module — title-level similarity check via SequenceMatcher
 
-Uses all-MiniLM-L6-v2 model (~90MB, downloaded on first use via lazy loading).
+No external ML models required.
 """
 
-import numpy as np
 from typing import Optional
-from sentence_transformers import SentenceTransformer
-
-from app.config import settings as app_settings
+from difflib import SequenceMatcher
 
 
 class SemanticDeduplicator:
-    """Three-layer dedup Layer 3: title-level semantic near-duplicate detection.
+    """Three-layer dedup Layer 3: title-level near-duplicate detection.
 
-    Compares article titles using sentence-transformers embeddings and cosine
-    similarity. Threshold of 0.75 is the community standard for news headline
-    deduplication.
-
-    Model is lazily loaded (_get_model) to avoid downloading ~90MB on import.
-    All encodings use normalize_embeddings=True so dot product = cosine similarity.
+    Compares article titles using Levenshtein-derived similarity (SequenceMatcher).
+    Threshold of 0.85 is appropriate for news headline deduplication.
     """
 
-    def __init__(self, model_name: str | None = None, threshold: float = 0.75):
-        self.model_name = model_name or app_settings.SENTENCE_TRANSFORMERS_MODEL
+    def __init__(self, threshold: float = 0.85):
         self.threshold = threshold
-        self._model: Optional[SentenceTransformer] = None
 
-    def _get_model(self) -> SentenceTransformer:
-        """Lazy-load the sentence-transformers model (downloaded on first call).
+    def encode(self, texts: list[str]) -> list[str]:
+        """Return raw titles as-is — this is a simplified interface for compatibility."""
+        return texts
 
-        This prevents the ~90MB model download on module import, deferring it
-        until the first actual dedup operation.
-        """
-        if self._model is None:
-            self._model = SentenceTransformer(self.model_name)
-        return self._model
+    def _similarity(self, a: str, b: str) -> float:
+        """Compute string similarity ratio between two titles."""
+        return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
-    def encode(self, texts: list[str]) -> np.ndarray:
-        """Batch-encode texts into normalized embeddings (dot product = cosine sim)."""
-        model = self._get_model()
-        return model.encode(texts, normalize_embeddings=True)
-
-    def is_duplicate(self, title: str, existing_embeddings: np.ndarray) -> bool:
-        """Check if a single title is semantically duplicate with any existing embedding.
+    def is_duplicate(self, title: str, existing_titles: list[str]) -> bool:
+        """Check if a single title is near-duplicate with any existing title.
 
         Args:
             title: The article title to check.
-            existing_embeddings: (N, D) matrix of embeddings from previously
-                processed articles. Empty array means no comparison possible.
+            existing_titles: List of titles from previously processed articles.
 
         Returns:
-            True if max cosine similarity exceeds threshold.
+            True if max similarity exceeds threshold.
         """
-        if len(existing_embeddings) == 0:
+        if not existing_titles:
             return False
-        emb = self.encode([title])  # shape: (1, 384)
-        similarities = np.dot(existing_embeddings, emb.T).flatten()
-        return float(np.max(similarities)) > self.threshold
+        for existing in existing_titles:
+            if self._similarity(title, existing) > self.threshold:
+                return True
+        return False
 
     def find_duplicates_in_batch(
         self,
         items: list[dict],
-        existing_embeddings: np.ndarray,
-    ) -> tuple[list[dict], np.ndarray, np.ndarray]:
+        existing_titles: list[str],
+    ) -> tuple[list[dict], list[str], list[bool]]:
         """Check a batch of new items against existing and intra-batch duplicates.
 
         Each item is compared against:
-            1. All existing embeddings (previously processed articles)
+            1. All existing titles (previously processed articles)
             2. All non-duplicate items earlier in the same batch
 
         Args:
             items: List of dicts, each must contain a 'title' key.
-            existing_embeddings: (N, D) matrix of existing article embeddings.
+            existing_titles: List of titles from existing articles.
 
         Returns:
-            (unique_items, unique_embeddings, duplicate_mask)
-            - unique_items: Items that passed both dedup checks.
-            - unique_embeddings: Embeddings for the unique items (can be
-              appended to an external cache).
-            - duplicate_mask: Boolean array same length as items; True = duplicate.
+            (unique_items, unique_titles, duplicate_mask)
         """
         if not items:
-            return [], np.array([]), np.array([], dtype=bool)
-
-        titles = [item["title"] for item in items]
-        batch_embs = self.encode(titles)  # shape: (N, 384)
+            return [], [], []
 
         unique_items: list[dict] = []
-        unique_embs_list: list[np.ndarray] = []
+        unique_titles: list[str] = []
         duplicate_mask: list[bool] = []
 
         for i, item in enumerate(items):
-            # Check against existing (previously processed) embeddings
-            if len(existing_embeddings) > 0:
-                sims = np.dot(existing_embeddings, batch_embs[i])
-                if float(np.max(sims)) > self.threshold:
+            title = item.get("title", "")
+
+            # Check against existing (previously processed) titles
+            dup = False
+            for existing in existing_titles:
+                if self._similarity(title, existing) > self.threshold:
                     duplicate_mask.append(True)
-                    continue
+                    dup = True
+                    break
+            if dup:
+                continue
 
             # Check against earlier non-duplicate items in this batch
-            if len(unique_embs_list) > 0:
-                stacked = np.vstack(unique_embs_list)
-                sims = np.dot(stacked, batch_embs[i])
-                if float(np.max(sims)) > self.threshold:
+            for existing in unique_titles:
+                if self._similarity(title, existing) > self.threshold:
                     duplicate_mask.append(True)
-                    continue
+                    dup = True
+                    break
+            if dup:
+                continue
 
             unique_items.append(item)
-            unique_embs_list.append(batch_embs[i])
+            unique_titles.append(title)
             duplicate_mask.append(False)
 
-        unique_embs = np.vstack(unique_embs_list) if unique_embs_list else np.array([])
-        return (
-            unique_items,
-            unique_embs,
-            np.array(duplicate_mask, dtype=bool),
-        )
+        return unique_items, unique_titles, duplicate_mask

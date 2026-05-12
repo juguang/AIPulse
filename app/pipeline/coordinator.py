@@ -1,7 +1,7 @@
 """AI Pipeline coordinator — orchestrates the full content processing pipeline.
 
 Flow for each article:
-    1. Layer 3 Semantic Dedup (cosine similarity > 0.75 threshold)
+    1. Layer 3 Title Dedup (string similarity > 0.85 threshold)
     2. Classification + Tagging (DeepSeek via router)
     3. Summarization (DeepSeek via router)
     4. Scoring + Recommendation (DeepSeek via router)
@@ -9,7 +9,7 @@ Flow for each article:
 
 Architecture:
     - Per-item sessions for error isolation (one item failure never blocks batch)
-    - Pre-loads recent embeddings for semantic dedup window
+    - Pre-loads recent titles for dedup window
     - Pure functions — no FastAPI dependency, callable from scheduler or manually
 """
 
@@ -19,7 +19,6 @@ import re
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-import numpy as np
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -43,20 +42,13 @@ logger = logging.getLogger(__name__)
 
 
 def _extract_json(text: str) -> dict:
-    """Extract JSON from LLM response, handling markdown code block wrapping.
-
-    LLMs sometimes wrap JSON output in ```json ... ``` blocks. This helper
-    tries direct json.loads() first, then falls back to extracting from
-    markdown code fences.
-    """
+    """Extract JSON from LLM response, handling markdown code block wrapping."""
     text = text.strip()
-    # Try direct parse first (most common for structured prompts)
     try:
         return json.loads(text)
     except json.JSONDecodeError:
         pass
 
-    # Try extracting from ```json ... ``` block
     match = re.search(r"```(?:json)?\s*\n?(.*?)\n?```", text, re.DOTALL)
     if match:
         try:
@@ -67,19 +59,15 @@ def _extract_json(text: str) -> dict:
     raise ValueError(f"Cannot extract JSON from response: {text[:200]}")
 
 
-async def get_recent_embeddings(days: int = 3) -> np.ndarray:
-    """Get sentence embeddings for titles of recently processed articles.
-
-    Queries ProcessedItem joined with RawItem for the last N days,
-    extracts titles, and encodes them via SemanticDeduplicator.
+async def get_recent_titles(days: int = 3) -> list[str]:
+    """Get titles of recently processed articles for dedup.
 
     Args:
         days: How many days back to look for processed articles.
 
     Returns:
-        (N, 384) numpy array of normalized embeddings, or empty array.
+        List of titles from recently processed articles.
     """
-    deduper = SemanticDeduplicator()
     async with AsyncSessionLocal() as db:
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
         result = await db.execute(
@@ -87,19 +75,14 @@ async def get_recent_embeddings(days: int = 3) -> np.ndarray:
             .join(ProcessedItem, RawItem.id == ProcessedItem.raw_item_id)
             .where(ProcessedItem.processed_at >= cutoff)
         )
-        titles = [row[0] for row in result.all()]
-
-    if not titles:
-        return np.array([])
-
-    return deduper.encode(titles)
+        return [row[0] for row in result.all()]
 
 
 async def process_single_item(
     item_id: int,
     router: ModelRouter,
     deduper: SemanticDeduplicator,
-    existing_embeddings: np.ndarray,
+    existing_titles: list[str],
 ) -> str:
     """Process a single raw_item through the full AI pipeline.
 
@@ -110,8 +93,7 @@ async def process_single_item(
         item_id: RawItem ID to process.
         router: Initialized ModelRouter instance.
         deduper: Initialized SemanticDeduplicator instance.
-        existing_embeddings: (N, 384) matrix of previously processed article
-            embeddings for semantic dedup comparison.
+        existing_titles: List of titles from previously processed articles.
 
     Returns:
         New status string: "processed", "duplicate", or "failed".
@@ -128,7 +110,6 @@ async def process_single_item(
             logger.warning("Item %d not found — skipping", item_id)
             return "failed"
 
-        # Prevent race condition: only process items still in "pending" status
         if item.status != "pending":
             logger.info(
                 "Item %d status is '%s' — skipping (not pending)", item_id, item.status
@@ -142,8 +123,8 @@ async def process_single_item(
     source_name = item.source.name if item.source else ""
 
     try:
-        # --- Phase 2: Layer 3 Semantic Dedup ---
-        if deduper.is_duplicate(item.title, existing_embeddings):
+        # --- Phase 2: Layer 3 Title Dedup ---
+        if deduper.is_duplicate(item.title, existing_titles):
             async with AsyncSessionLocal() as db:
                 result = await db.execute(
                     select(RawItem).where(RawItem.id == item_id)
@@ -152,13 +133,12 @@ async def process_single_item(
                 if item:
                     item.status = "duplicate"
                     await db.commit()
-            logger.info("Item %d is a semantic duplicate — skipped", item_id)
+            logger.info("Item %d is a near-duplicate — skipped", item_id)
             return "duplicate"
 
         content = item.content_normalized or item.content_raw or ""
 
         # --- Phase 3: Classification + Tagging ---
-        # Paper sources: use LLM for tags but force "研究" category
         if source_type in ("arxiv", "hf_papers"):
             classification_user = CLASSIFICATION_USER.format(
                 source_type=source_type,
@@ -278,7 +258,6 @@ async def process_single_item(
         logger.error(
             "Failed to process item %d: %s", item_id, str(exc), exc_info=True
         )
-        # Mark item as failed with error details
         async with AsyncSessionLocal() as db:
             result = await db.execute(
                 select(RawItem).where(RawItem.id == item_id)
@@ -300,12 +279,12 @@ async def process_pending_items(batch_size: Optional[int] = None) -> int:
 
     Pipeline flow per batch:
         1. Query raw_items WHERE status='pending' ORDER BY fetched_at LIMIT N
-        2. Pre-load recent article embeddings for dedup window (3 days)
+        2. Pre-load recent article titles for dedup window (3 days)
         3. For each item (per-item session, error-isolated):
-            a. Semantic dedup check
-            b. LLM classification + tagging → category, tags
-            c. LLM summarization → Chinese summary (150-300 chars)
-            d. LLM scoring → recommendation score + reason
+            a. Title dedup check
+            b. LLM classification + tagging
+            c. LLM summarization
+            d. LLM scoring
             e. Write ProcessedItem with cumulative cost tracking
         4. Return count of items processed
 
@@ -322,30 +301,26 @@ async def process_pending_items(batch_size: Optional[int] = None) -> int:
         logger.warning("DEEPSEEK_API_KEY not set — AI pipeline disabled")
         return 0
 
-    # Initialize shared resources
     clients = LLMClients.from_settings(settings)
     router = ModelRouter(clients=clients, settings=settings)
     deduper = SemanticDeduplicator()
 
-    # Pre-load recent embeddings for semantic dedup window (3 days)
+    # Pre-load recent titles for dedup window (3 days)
     try:
-        existing_embeddings = await get_recent_embeddings(days=3)
+        existing_titles = await get_recent_titles(days=3)
         logger.info(
-            "Loaded %d recent article embeddings for dedup window",
-            len(existing_embeddings) if len(existing_embeddings.shape) > 1 else 0,
+            "Loaded %d recent article titles for dedup window", len(existing_titles)
         )
     except Exception as exc:
-        logger.warning("Failed to load recent embeddings: %s — proceeding without", exc)
-        existing_embeddings = np.array([])
+        logger.warning("Failed to load recent titles: %s — proceeding without", exc)
+        existing_titles = []
 
     # Poll pending items
     async with AsyncSessionLocal() as db:
         result = await db.execute(
             select(RawItem)
             .where(RawItem.status == "pending")
-            .where(
-                RawItem.retry_count < settings.MAX_RETRIES
-            )
+            .where(RawItem.retry_count < settings.MAX_RETRIES)
             .order_by(RawItem.fetched_at)
             .limit(batch_size)
         )
@@ -360,32 +335,21 @@ async def process_pending_items(batch_size: Optional[int] = None) -> int:
     )
 
     # Process each item with per-item error isolation
-    embeddings_cache: list[np.ndarray] = []
-    if len(existing_embeddings) > 0:
-        embeddings_cache.append(existing_embeddings)
-
+    titles_cache: list[str] = list(existing_titles)
     processed_count = 0
-    for item in pending_items:
-        # Build consolidated embeddings matrix for this item
-        if embeddings_cache:
-            current_embeddings = np.vstack(embeddings_cache)
-        else:
-            current_embeddings = np.array([])
 
+    for item in pending_items:
         status = await process_single_item(
             item_id=item.id,
             router=router,
             deduper=deduper,
-            existing_embeddings=current_embeddings,
+            existing_titles=titles_cache,
         )
 
-        # Update embeddings cache for subsequent items in this batch
         if status == "processed":
             processed_count += 1
-            emb = deduper.encode([item.title])
-            embeddings_cache.append(emb)
+            titles_cache.append(item.title)
 
-    # Cleanup LLM client
     await clients.close()
 
     logger.info("Batch complete: %d/%d items processed", processed_count, len(pending_items))
