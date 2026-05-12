@@ -13,13 +13,14 @@ Architecture:
     - Pure functions — no FastAPI dependency, callable from scheduler or manually
 """
 
+import asyncio
 import json
 import logging
 import re
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import case, select
 from sqlalchemy.orm import selectinload
 
 from app.config import settings
@@ -36,6 +37,7 @@ from app.llm.prompts import (
 from app.llm.router import ModelRouter
 from app.models.processed_item import ProcessedItem
 from app.models.raw_item import RawItem
+from app.models.source_config import SourceConfig
 from app.pipeline.dedup import SemanticDeduplicator
 
 logger = logging.getLogger(__name__)
@@ -315,13 +317,18 @@ async def process_pending_items(batch_size: Optional[int] = None) -> int:
         logger.warning("Failed to load recent titles: %s — proceeding without", exc)
         existing_titles = []
 
-    # Poll pending items
+    # Poll pending items — prioritize non-paper sources (arxiv/hf_papers last)
     async with AsyncSessionLocal() as db:
         result = await db.execute(
             select(RawItem)
+            .join(SourceConfig, RawItem.source_id == SourceConfig.id)
             .where(RawItem.status == "pending")
             .where(RawItem.retry_count < settings.MAX_RETRIES)
-            .order_by(RawItem.fetched_at)
+            .order_by(
+                # arxiv and hf_papers sources come last
+                case((SourceConfig.type.in_(["arxiv", "hf_papers"]), 1), else_=0),
+                RawItem.fetched_at,
+            )
             .limit(batch_size)
         )
         pending_items = result.scalars().all()
@@ -334,21 +341,27 @@ async def process_pending_items(batch_size: Optional[int] = None) -> int:
         "Processing %d pending items (batch_size=%d)", len(pending_items), batch_size
     )
 
-    # Process each item with per-item error isolation
+    # Process items concurrently with a semaphore to limit API load
+    semaphore = asyncio.Semaphore(5)
     titles_cache: list[str] = list(existing_titles)
     processed_count = 0
+    titles_lock = asyncio.Lock()
 
-    for item in pending_items:
-        status = await process_single_item(
-            item_id=item.id,
-            router=router,
-            deduper=deduper,
-            existing_titles=titles_cache,
-        )
+    async def _process(item):
+        nonlocal processed_count
+        async with semaphore:
+            status = await process_single_item(
+                item_id=item.id,
+                router=router,
+                deduper=deduper,
+                existing_titles=list(titles_cache),  # snapshot at dispatch time
+            )
+            if status == "processed":
+                async with titles_lock:
+                    processed_count += 1
+                    titles_cache.append(item.title)
 
-        if status == "processed":
-            processed_count += 1
-            titles_cache.append(item.title)
+    await asyncio.gather(*[_process(item) for item in pending_items])
 
     await clients.close()
 
