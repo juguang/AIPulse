@@ -1,10 +1,7 @@
 from datetime import datetime
 from typing import Optional, Dict
 from sqlalchemy import (
-    BigInteger,
-    Boolean,
     DateTime,
-    Float,
     ForeignKey,
     Integer,
     JSON,
@@ -22,7 +19,7 @@ class RawItem(Base):
 
     __tablename__ = "raw_items"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     source_id: Mapped[int] = mapped_column(
         ForeignKey("source_configs.id"), nullable=False, index=True
     )

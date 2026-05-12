@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import Optional, Dict
 from sqlalchemy import (
-    BigInteger,
     DateTime,
     Float,
     ForeignKey,
@@ -20,7 +19,7 @@ class ProcessedItem(Base):
 
     __tablename__ = "processed_items"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     raw_item_id: Mapped[int] = mapped_column(
         ForeignKey("raw_items.id"), unique=True, nullable=False, index=True
     )

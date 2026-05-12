@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import BigInteger, DateTime, Integer, String, Text, func
+from sqlalchemy import DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 
@@ -10,7 +10,7 @@ class ImageCache(Base):
 
     __tablename__ = "image_cache"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     original_url: Mapped[str] = mapped_column(
         Text, unique=True, nullable=False, index=True
     )
