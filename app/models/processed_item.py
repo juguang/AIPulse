@@ -6,11 +6,11 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    JSON,
     String,
     Text,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -25,7 +25,7 @@ class ProcessedItem(Base):
         ForeignKey("raw_items.id"), unique=True, nullable=False, index=True
     )
     summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    tags: Mapped[Optional[Dict]] = mapped_column(JSONB, nullable=True, default=[])
+    tags: Mapped[Optional[Dict]] = mapped_column(JSON, nullable=True, default=[])
     category: Mapped[Optional[str]] = mapped_column(
         String(50), nullable=True, index=True
     )  # 模型/产品/行业/研究/工程

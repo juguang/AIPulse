@@ -29,9 +29,9 @@ JOB_ID_PIPELINE = "ai_pipeline"
 
 def _derive_sync_dsn(async_dsn: str) -> str:
     """Derive sync DSN from async DSN for APScheduler's SQLAlchemyJobStore."""
-    return async_dsn.replace("postgresql+asyncpg://", "postgresql://").replace(
-        "postgresql+psycopg://", "postgresql://"
-    )
+    return async_dsn.replace("+aiosqlite", "").replace(
+        "+asyncpg", ""
+    ).replace("+psycopg", "")
 
 
 async def _crawl_job():

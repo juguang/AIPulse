@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
+from sqlalchemy import func
 
 # revision identifiers, used by Alembic.
 revision: str = '2c40e78acd0b'
@@ -24,11 +24,11 @@ def upgrade() -> None:
     sa.Column('id', sa.BigInteger(), autoincrement=True, nullable=False),
     sa.Column('original_url', sa.Text(), nullable=False),
     sa.Column('proxy_path', sa.String(length=512), nullable=False),
-    sa.Column('cached_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('cached_at', sa.DateTime(timezone=True), server_default=func.now(), nullable=False),
     sa.Column('expires_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('file_size', sa.Integer(), nullable=True),
     sa.Column('content_type', sa.String(length=100), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=func.now(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_image_cache_original_url'), 'image_cache', ['original_url'], unique=True)
@@ -43,8 +43,8 @@ def upgrade() -> None:
     sa.Column('last_error', sa.Text(), nullable=True),
     sa.Column('consecutive_failures', sa.Integer(), nullable=False),
     sa.Column('health_score', sa.Float(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=func.now(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=func.now(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_source_configs_type'), 'source_configs', ['type'], unique=False)
@@ -58,15 +58,15 @@ def upgrade() -> None:
     sa.Column('content_normalized', sa.Text(), nullable=True),
     sa.Column('author', sa.String(length=255), nullable=True),
     sa.Column('published_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('fetched_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('fetched_at', sa.DateTime(timezone=True), server_default=func.now(), nullable=False),
     sa.Column('content_hash', sa.String(length=64), nullable=False),
     sa.Column('status', sa.String(length=20), nullable=False),
     sa.Column('error_message', sa.Text(), nullable=True),
     sa.Column('retry_count', sa.Integer(), nullable=False),
-    sa.Column('raw_data', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-    sa.Column('extra_data', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('raw_data', sa.JSON(), nullable=True),
+    sa.Column('extra_data', sa.JSON(), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=func.now(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=func.now(), nullable=False),
     sa.ForeignKeyConstraint(['source_id'], ['source_configs.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('source_id', 'guid', name='uq_raw_items_source_guid')
@@ -79,7 +79,7 @@ def upgrade() -> None:
     sa.Column('id', sa.BigInteger(), autoincrement=True, nullable=False),
     sa.Column('raw_item_id', sa.BigInteger(), nullable=False),
     sa.Column('summary', sa.Text(), nullable=True),
-    sa.Column('tags', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('tags', sa.JSON(), nullable=True),
     sa.Column('category', sa.String(length=50), nullable=True),
     sa.Column('recommended_score', sa.Float(), nullable=True),
     sa.Column('recommendation_reason', sa.Text(), nullable=True),
@@ -87,8 +87,8 @@ def upgrade() -> None:
     sa.Column('input_tokens', sa.Integer(), nullable=True),
     sa.Column('output_tokens', sa.Integer(), nullable=True),
     sa.Column('cost_usd', sa.Float(), nullable=True),
-    sa.Column('processed_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('processed_at', sa.DateTime(timezone=True), server_default=func.now(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=func.now(), nullable=False),
     sa.ForeignKeyConstraint(['raw_item_id'], ['raw_items.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
