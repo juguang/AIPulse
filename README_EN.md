@@ -16,7 +16,6 @@ Curated AI news aggregation platform — automatically crawls, classifies, tags,
 
 | Dependency | Version | Purpose |
 |------------|---------|---------|
-| [PostgreSQL](https://www.postgresql.org/) | 16+ | Database |
 | [Python](https://www.python.org/) | >= 3.13 | Backend runtime |
 | [Node.js](https://nodejs.org/) | >= 20 | OpenCLI + frontend build |
 | [pnpm](https://pnpm.io/) | latest | Frontend package manager |
@@ -29,20 +28,17 @@ Curated AI news aggregation platform — automatically crawls, classifies, tags,
 cp .env.example .env
 # Edit .env, fill in DEEPSEEK_API_KEY
 
-# 2. Create PostgreSQL database
-createdb aipulse
-
-# 3. Install backend
+# 2. Install backend
 uv sync
 
-# 4. Install frontend
+# 3. Install frontend
 cd frontend && pnpm install
 
-# 5. Install OpenCLI (required by some sources)
+# 4. Install OpenCLI (required by some sources)
 npm install -g opencli
 
-# 6. Run database migrations
-uv run alembic upgrade head
+# 5. Run database migrations
+uv run alembic upgrade head\n\n# 6. Seed data sources (first run only)\nuv run python -m app.seed_sources
 ```
 
 ### Start Dev Server
@@ -63,7 +59,7 @@ Copy `.env.example` to `.env` and configure:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql+asyncpg://localhost:5432/aipulse` |
+| `DATABASE_URL` | Database connection string | `sqlite+aiosqlite://./aipulse.db` |
 | `DEEPSEEK_API_KEY` | DeepSeek API key | **(required)** |
 | `DEEPSEEK_BASE_URL` | DeepSeek API endpoint | `https://api.deepseek.com` |
 | `DEEPSEEK_MODEL` | AI model name | `deepseek-v4-flash` |
@@ -85,5 +81,5 @@ Copy `.env.example` to `.env` and configure:
 
 - **Backend** — Python 3.13 / FastAPI / SQLAlchemy / APScheduler
 - **Frontend** — React 19 / TanStack Router / Tailwind CSS 4 / Zustand
-- **AI** — DeepSeek API / sentence-transformers
+- **AI** — DeepSeek API / aiosqlite
 - **Crawler** — feedparser / httpx / OpenCLI
